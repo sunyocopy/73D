@@ -727,6 +727,7 @@
                     <li><strong>ผลัดเช้า (กะที่ 1 เวลา 06:00 - 14:00 น.)</strong> สามารถให้ <strong>ผู้จัดการร้าน (ผจก.)</strong> อยู่ปฏิบัติหน้าที่แทนผู้ช่วยผู้จัดการได้ (ในวันที่ผู้ช่วยฯ กะเช้าหยุดประจำสัปดาห์)</li>
                     <li><strong>วันหยุดของผู้จัดการร้าน (ผจก.)</strong> กำหนดให้หยุดได้ <strong>เฉพาะวันเสาร์ (ส) หรือ วันอาทิตย์ (อา) เท่านั้น</strong> เนื่องจากวันธรรมดา (จันทร์–ศุกร์) ผจก. ต้องอยู่บริหารจัดการเงินสด ฝากเงินธนาคาร และเคลียร์เอกสารบัญชี</li>
                 <li><strong>จัดผู้ช่วยฯ ผลัดดึกเพียง 1 คนต่อคืน:</strong> ผลัดดึก (22:00 - 07:00 น.) มีผู้ช่วยฯ ประจำเพียง 1 คนเท่านั้น (ไม่ให้ผู้ช่วยฯ 2 คนอยู่ซ้อนกันในผลัดดึก) โดยผู้ช่วยฯ ผลัดเช้า-บ่ายจะหมุนเวียนมาช่วยคุมผลัดดึกเฉพาะวันที่ผู้ช่วยฯ ผลัดดึกหยุดประจำสัปดาห์ แล้วจึงให้หยุดพัก (OFF) ในวันถัดไป</li>
+                <li class="text-seven-red dark:text-rose-400 font-semibold"><strong>กฎความปลอดภัยผลัดดึก (ห้ามอยู่คนเดียว):</strong> ผลัดดึก (22:00 - 07:00 น.) <strong>ห้ามมีพนักงานอยู่เพียง 1 คนโดยเด็ดขาด ต้องมีผู้ปฏิบัติงานรวมอย่างน้อย 2 คนทุกคืน</strong> (ผู้ช่วยฯ 1 คน + พนักงานประจำกะดึกอย่างน้อย 1 คน) เพื่อความปลอดภัยของพนักงานและร้าน</li>
                 <li>พนักงานทุกคน (รวม ผจก. และผู้ช่วยฯ) ทำงานสัปดาห์ละ 6 วัน และสลับหยุดประจำสัปดาห์คนละ 1 วัน โดยผู้ช่วยฯ และพนักงานทั่วไปเน้นหยุดช่วงวันจันทร์–พฤหัสบดี เพื่อให้วันศุกร์–อาทิตย์มีกำลังคนเต็มประสิทธิภาพ</li>
                 <li class="text-seven-red dark:text-rose-400 font-semibold"><strong>กฎข้อห้ามสำคัญ (ห้ามควงกะข้ามคืน &amp; การพักหลังออกกะดึก):</strong> พนักงานและผู้ช่วยฯ ที่เข้า <strong>กะ 3 ดึก (22:00 - 07:00 น.) ห้ามเข้า กะ 1 เช้า (06:00 - 15:00 น.) ในวันถัดไปโดยเด็ดขาด</strong> และ<strong>หลีกเลี่ยงการต่อ กะ 2 บ่าย (14:00 - 23:00 น.) ทันทีหลังออกกะดึก</strong> (ให้ยืน <strong>กะ 3 ดึกต่อเนื่อง</strong> หรือจัดเป็น <strong>วันหยุด (OFF)</strong> ในวันถัดไปเพื่อให้พนักงานได้พักผ่อนเต็มที่)</li>
             </div>
@@ -1801,7 +1802,7 @@
                 const totalActiveToday = employees.filter(e => e.schedule[dIdx] !== 'OFF').length;
                 const targetS1 = Math.max(1, Math.round(totalActiveToday * share0));
                 const targetS2 = Math.max(1, Math.round(totalActiveToday * share1));
-                const targetS3 = Math.max(1, totalActiveToday - targetS1 - targetS2);
+                const targetS3 = Math.max(2, totalActiveToday - targetS1 - targetS2);
                 const targets = [targetS1, targetS2, targetS3];
 
                 const counts = [0, 0, 0];
@@ -1828,6 +1829,13 @@
                     }
                 });
 
+                // Guarantee Night Shift (2) ALWAYS has at least 2 staff total (1 Asst + at least 1 regular staff)
+                while (counts[2] < 2 && unassigned.length > 0) {
+                    const emp = unassigned.shift();
+                    emp.schedule[dIdx] = 2;
+                    counts[2]++;
+                }
+
                 unassigned.forEach(emp => {
                     let chosen = 0;
                     if (counts[0] < targets[0]) chosen = 0;
@@ -1836,6 +1844,17 @@
                     emp.schedule[dIdx] = chosen;
                     counts[chosen]++;
                 });
+
+                // Final safety fallback: if Night Shift still has < 2 staff, pull a regular staff from the shift with the most people
+                if (counts[2] < 2) {
+                    const donorShift = counts[0] >= counts[1] ? 0 : 1;
+                    const donorEmp = activeRegs.find(e => e.schedule[dIdx] === donorShift);
+                    if (donorEmp) {
+                        donorEmp.schedule[dIdx] = 2;
+                        counts[donorShift]--;
+                        counts[2]++;
+                    }
+                }
             }
 
             employees.forEach(emp => {
@@ -1845,71 +1864,8 @@
             rosterPlan = employees;
             renderRosterTable(normalMetrics);
             if (notify) {
-                showToast(`จัดตารางเวร ${rosterSize} คน (ทำงาน 6 วัน / หยุด 1 วัน • ไม่ต่อกะเช้า/บ่ายหลังออกกะดึก) เรียบร้อยแล้ว`);
+                showToast(`จัดตารางเวร 7 วัน (ทำงาน 6 / หยุด 1 วัน • ผลัดดึก ≥ 2 คนทุกคืน) เรียบร้อยแล้ว`);
             }
-        }
-
-        function updateModeTabsUI() {
-            const btnNormal = document.getElementById('btn-mode-normal');
-            const btnFest = document.getElementById('btn-mode-festival');
-            const bar = document.getElementById('active-mode-bar');
-            const barText = document.getElementById('active-mode-bar-text');
-            const barBadge = document.getElementById('active-mode-bar-badge');
-            const shiftViewContainer = document.getElementById('shift-view-tabs');
-            if (!btnNormal || !btnFest || !shiftViewContainer) return;
-
-            if (state.simMode === 'festival') {
-                btnFest.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-seven-red to-seven-orange text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer';
-                btnNormal.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-seven-green transition flex items-center gap-1.5 cursor-pointer';
-                bar.className = 'mb-2.5 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800/60 flex items-center justify-between text-xs';
-                barText.className = 'font-semibold text-seven-red dark:text-orange-300';
-                barText.innerHTML = `<i class="fa-solid fa-fire mr-1"></i> โหมดเทศกาลสงกรานต์/ปีใหม่: ลูกค้า ${Number(state.festCustomers).toLocaleString()} คน/วัน (2 กะ กะละ 12 ชม.)`;
-                barBadge.className = 'px-2 py-0.5 rounded-full bg-seven-red text-white text-[10px] font-bold';
-                barBadge.textContent = 'FESTIVAL 12-HR';
-
-                const tabs = [
-                    { id: 'all', label: 'ภาพรวมทั้งวัน (100%)' },
-                    { id: 0, label: `กะ 1 กลางวัน (${state.festShiftPcts[0]}%)` },
-                    { id: 1, label: `กะ 3 กลางคืน (${state.festShiftPcts[1]}%)` }
-                ];
-                shiftViewContainer.innerHTML = tabs.map(t => {
-                    const active = state.activeShiftView === t.id;
-                    return `<button onclick="setShiftView(${typeof t.id === 'string' ? `'${t.id}'` : t.id})" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${active ? 'bg-seven-orange text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">${t.label}</button>`;
-                }).join('');
-            } else {
-                btnNormal.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-seven-green text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer';
-                btnFest.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-seven-red transition flex items-center gap-1.5 cursor-pointer';
-                bar.className = 'mb-2.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs';
-                barText.className = 'font-semibold text-seven-green dark:text-emerald-300';
-                const dayName = state.dayNames[state.selectedDayIdx];
-                const dayPct = state.dayPcts[state.selectedDayIdx];
-                const effCust = getDayCustomers(state.selectedDayIdx);
-                barText.innerHTML = `<i class="fa-solid fa-circle-info mr-1"></i> โหมดวันปกติ: ${dayName} (${dayPct}% ของสัปดาห์) | ลูกค้า ${effCust.toLocaleString()} คน/วัน (3 กะ กะละ ${state.shiftHours} ชม.)`;
-                barBadge.className = 'px-2 py-0.5 rounded-full bg-seven-green text-white text-[10px] font-bold';
-                barBadge.textContent = 'NORMAL 3-SHIFT';
-
-                const tabs = [
-                    { id: 'all', label: 'ภาพรวมทั้งวัน (100%)' },
-                    { id: 0, label: `กะ 1 เช้า (${state.shiftPcts[0]}%)` },
-                    { id: 1, label: `กะ 2 บ่าย (${state.shiftPcts[1]}%)` },
-                    { id: 2, label: `กะ 3 ดึก (${state.shiftPcts[2]}%)` }
-                ];
-                shiftViewContainer.innerHTML = tabs.map(t => {
-                    const active = state.activeShiftView === t.id;
-                    return `<button onclick="setShiftView(${typeof t.id === 'string' ? `'${t.id}'` : t.id})" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${active ? 'bg-seven-green text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">${t.label}</button>`;
-                }).join('');
-            }
-        }
-
-        function cycleEmployeeShift(empIdx, dayIdx) {
-            if (!rosterPlan[empIdx]) return;
-            const current = rosterPlan[empIdx].schedule[dayIdx];
-            const order = state.simMode === 'festival' ? [0, 2, 'OFF'] : [0, 1, 2, 'OFF'];
-            const idx = order.indexOf(current);
-            const next = idx === -1 ? order[0] : order[(idx + 1) % order.length];
-            rosterPlan[empIdx].schedule[dayIdx] = next;
-            rosterPlan[empIdx].workDaysCount = rosterPlan[empIdx].schedule.filter(v => v !== 'OFF').length;
-            renderRosterTable(calculateMetrics());
         }
 
         function renderRosterTable(normalMetrics) {
@@ -1917,35 +1873,29 @@
             const tbody = document.getElementById('roster-table-body');
             const tfoot = document.getElementById('roster-table-foot');
             const infoEl = document.getElementById('roster-headcount-info');
-            const legendEl = document.getElementById('roster-legend-bar');
+            const legendBar = document.getElementById('roster-legend-bar');
             if (!thead || !tbody || !tfoot) return;
 
             const isFest = state.simMode === 'festival';
 
-            if (legendEl) {
-                legendEl.innerHTML = isFest
-                    ? `
-                        <span class="font-semibold text-seven-red">คำอธิบายกะเทศกาล (12 ชม./กะ):</span>
-                        <span class="px-2 py-0.5 rounded-md font-bold bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300 border border-orange-200 dark:border-orange-700">กะ 1 กลางวัน 12ชม. (06-18)</span>
-                        <span class="px-2 py-0.5 rounded-md font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700">กะ 3 กลางคืน 12ชม. (18-06)</span>
-                        <span class="px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">หยุด (OFF)</span>
-                    `
-                    : `
-                        <span class="font-semibold text-slate-500">คำอธิบายกะวันปกติ (9 ชม. รวมพัก 1 ชม.):</span>
-                        <span class="px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">กะ 1 เช้า (06:00-15:00)</span>
-                        <span class="px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">กะ 2 บ่าย (14:00-23:00)</span>
-                        <span class="px-2 py-0.5 rounded-md font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">กะ 3 ดึก (22:00-07:00)</span>
-                        <span class="px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">หยุด (OFF)</span>
-                    `;
+            if (infoEl) {
+                infoEl.textContent = isFest
+                    ? `พนักงานในตาราง: ${rosterPlan.length} คน (ระดมพล 2 กะเทศกาล 12 ชม.)`
+                    : `พนักงานในตาราง: ${rosterPlan.length} คน (ทำงาน 6 วัน / หยุด 1 วัน)`;
             }
 
-            if (infoEl) {
-                if (isFest) {
-                    infoEl.innerHTML = `โหมดเทศกาล 2 กะ (12 ชม.): <span class="text-seven-red font-bold">ระดมพล ${rosterPlan.length} คน</span> (เป้ากะ ${state.festShiftStaff.join('/')})`;
-                } else {
-                    const avgWorking = (rosterPlan.length * 6 / 7).toFixed(1);
-                    infoEl.innerHTML = `พนักงานทั้งหมดในสาขา: <span class="text-blue-600 dark:text-blue-400 font-bold">${rosterPlan.length} คน</span> (มาทำงานเฉลี่ย ${avgWorking} คน/วัน • เป้ากะ ${state.shiftStaff.join('/')})`;
-                }
+            if (legendBar) {
+                legendBar.innerHTML = isFest
+                    ? `
+                        <span class="px-2 py-0.5 rounded-md bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300 font-bold">กะ 1 กลางวัน 12ชม. (06:00-18:00)</span>
+                        <span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 font-bold">กะ 3 กลางคืน 12ชม. (18:00-06:00)</span>
+                    `
+                    : `
+                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-bold">กะ 1 เช้า (06:00-15:00)</span>
+                        <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 font-bold">กะ 2 บ่าย (14:00-23:00)</span>
+                        <span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 font-bold">กะ 3 ดึก (22:00-07:00)</span>
+                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 font-bold">หยุด (OFF)</span>
+                    `;
             }
 
             thead.innerHTML = `
@@ -2062,11 +2012,13 @@
                 if (isFest) {
                     if (!hasSupS1) missingWarnings.push(`วัน${dShort} (กะกลางวัน 12ชม. ขาด ผจก./ผู้ช่วยฯ)`);
                     if (asstS3Count === 0) missingWarnings.push(`วัน${dShort} (กะกลางคืน 12ชม. ขาดผู้ช่วยฯ)`);
+                    if (s3 < 2) missingWarnings.push(`วัน${dShort} (กะกลางคืน 12ชม. มีแค่ ${s3} คน ต้องอย่างน้อย 2 คน)`);
                 } else {
                     if (!hasSupS1) missingWarnings.push(`วัน${dShort} (กะเช้าขาด ผจก./ผู้ช่วยฯ)`);
                     if (!hasAsstS2) missingWarnings.push(`วัน${dShort} (กะบ่ายขาดผู้ช่วยฯ)`);
                     if (asstS3Count === 0) missingWarnings.push(`วัน${dShort} (กะดึกขาดผู้ช่วยฯ)`);
                     if (asstS3Count > 1) missingWarnings.push(`วัน${dShort} (ผู้ช่วยฯ อยู่ซ้อนกัน ${asstS3Count} คนในผลัดดึก ควรมีเพียง 1 คน)`);
+                    if (s3 < 2) missingWarnings.push(`วัน${dShort} (ผลัดดึกมีแค่ ${s3} คน ห้ามอยู่คนเดียว ต้องอย่างน้อย 2 คน)`);
                 }
 
                 return {
@@ -2075,7 +2027,7 @@
                     s2,
                     s3,
                     off,
-                    allCovered: isFest ? (hasSupS1 && asstS3Count >= 1) : (hasSupS1 && hasAsstS2 && asstS3Count === 1)
+                    allCovered: isFest ? (hasSupS1 && asstS3Count >= 1 && s3 >= 2) : (hasSupS1 && hasAsstS2 && asstS3Count === 1 && s3 >= 2)
                 };
             });
 
@@ -2110,17 +2062,88 @@
                         : `
                             <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 text-[11px] font-bold">
                                 <i class="fa-solid fa-circle-check"></i>
-                                <span>ผ่านเงื่อนไขครบถ้วน: ทุกคนทำงาน 6 หยุด 1 วัน • ผจก. หยุด ส/อา • ผู้ช่วยฯ ครบทุกผลัด • ไม่มีใครออกกะดึกแล้วต่อกะเช้า/กะบ่าย</span>
+                                <span>ผ่านเงื่อนไขครบถ้วน: ทุกคนทำงาน 6 หยุด 1 วัน • ผจก. หยุด ส/อา • ผู้ช่วยฯ ครบทุกผลัด • ผลัดดึก ≥ 2 คนทุกคืน • ไม่มีใครออกกะดึกแล้วต่อกะเช้า/บ่าย</span>
                             </div>
                         `;
                 } else {
                     supAlertEl.innerHTML = `
                         <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-100 text-seven-red dark:bg-red-950/70 dark:text-red-300 text-[11px] font-bold">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>แจ้งเตือนเงื่อนไข: ${missingWarnings.join(' • ')}</span>
-                        </div>
-                    `;
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>แจ้งเตือนเงื่อนไข: ${missingWarnings.join(' • ')}</span>
+                    </div>
+                `;
                 }
+            }
+        }
+
+        window.cycleEmployeeShift = function(empIdx, dayIdx) {
+            const emp = rosterPlan[empIdx];
+            if (!emp) return;
+            const isFest = state.simMode === 'festival';
+            const cycleOrder = isFest ? [0, 2, 'OFF'] : [0, 1, 2, 'OFF'];
+            const currentVal = emp.schedule[dayIdx];
+            const nextIdx = (cycleOrder.indexOf(currentVal) + 1) % cycleOrder.length;
+            emp.schedule[dayIdx] = cycleOrder[nextIdx];
+            emp.workDaysCount = emp.schedule.filter(v => v !== 'OFF').length;
+            renderRosterTable(calculateMetrics());
+        };
+
+        function updateModeTabsUI() {
+            const isFest = state.simMode === 'festival';
+            const btnNorm = document.getElementById('btn-mode-normal');
+            const btnFest = document.getElementById('btn-mode-festival');
+            const bar = document.getElementById('active-mode-bar');
+            const barText = document.getElementById('active-mode-bar-text');
+            const barBadge = document.getElementById('active-mode-bar-badge');
+            const shiftTabs = document.getElementById('shift-view-tabs');
+
+            if (btnNorm && btnFest) {
+                btnNorm.className = !isFest
+                    ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-seven-green text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer'
+                    : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-seven-green transition flex items-center gap-1.5 cursor-pointer';
+                btnFest.className = isFest
+                    ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-seven-orange to-seven-red text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer'
+                    : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-seven-red transition flex items-center gap-1.5 cursor-pointer';
+            }
+
+            if (bar && barText && barBadge) {
+                if (isFest) {
+                    bar.className = 'mb-2.5 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800/60 flex items-center justify-between text-xs';
+                    barText.className = 'font-semibold text-seven-red dark:text-orange-300';
+                    barText.innerHTML = `<i class="fa-solid fa-fire-flame-curved mr-1"></i> โหมดเทศกาล (2 กะ / กะละ 12 ชม. | ระดมพลเต็มกำลัง)`;
+                    barBadge.className = 'px-2 py-0.5 rounded-full bg-seven-red text-white text-[10px] font-bold';
+                    barBadge.textContent = 'FESTIVAL 2-SHIFT';
+                } else {
+                    bar.className = 'mb-2.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs';
+                    barText.className = 'font-semibold text-seven-green dark:text-emerald-300';
+                    barText.innerHTML = `<i class="fa-solid fa-circle-info mr-1"></i> โหมดวันปกติ (3 กะ / 8 ชม. • ${state.dayNames[state.selectedDayIdx]})`;
+                    barBadge.className = 'px-2 py-0.5 rounded-full bg-seven-green text-white text-[10px] font-bold';
+                    barBadge.textContent = 'NORMAL 3-SHIFT';
+                }
+            }
+
+            if (shiftTabs) {
+                const tabs = isFest
+                    ? [
+                        { id: 0, label: 'กะที่ 1 กลางวัน (06:00-18:00)' },
+                        { id: 1, label: 'กะที่ 3 กลางคืน (18:00-06:00)' },
+                        { id: 'all', label: 'รวมทั้งวัน (24 ชม.)' }
+                    ]
+                    : [
+                        { id: 0, label: 'กะที่ 1 เช้า (06:00-15:00)' },
+                        { id: 1, label: 'กะที่ 2 บ่าย (14:00-23:00)' },
+                        { id: 2, label: 'กะที่ 3 ดึก (22:00-07:00)' },
+                        { id: 'all', label: 'รวมทั้งวัน (24 ชม.)' }
+                    ];
+
+                shiftTabs.innerHTML = tabs.map(t => {
+                    const active = state.activeShiftView === t.id;
+                    const cls = active
+                        ? (isFest ? 'bg-seven-orange text-white border-seven-orange' : 'bg-seven-green text-white border-seven-green')
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700';
+                    const arg = typeof t.id === 'string' ? `'${t.id}'` : t.id;
+                    return `<button type="button" onclick="setShiftView(${arg})" class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition cursor-pointer">${t.label}</button>`;
+                }).join('');
             }
         }
 
