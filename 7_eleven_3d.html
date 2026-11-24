@@ -1,0 +1,2866 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบวางแผนอัตรากำลังคน 7-Eleven แบบ 3D (สาขาปั๊มน้ำมัน)</title>
+    <!-- Google Fonts: Prompt & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        seven: {
+                            green: '#008060',
+                            orange: '#F37021',
+                            red: '#EE2524',
+                            dark: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.7);
+        }
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 360px;
+            touch-action: none;
+            cursor: grab;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+            body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+            }
+            header,
+            #toast-banner,
+            #kpi-cards-grid,
+            #workspace-top-grid,
+            #table1-section,
+            #research-section,
+            #table2-section,
+            #calc-ref-section,
+            .no-print {
+                display: none !important;
+            }
+            main {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            #table3-roster-section {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            #table3-roster-section button {
+                border-width: 1px !important;
+                padding: 2px 4px !important;
+                font-size: 9px !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand & Title -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-seven-green via-emerald-600 to-teal-700 text-white shadow-md relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1.5 bg-seven-orange"></div>
+                    <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-seven-red"></div>
+                    <span class="font-bold text-lg tracking-tight">7-11</span>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                            ระบบวางแผนอัตรากำลังคน 7-Eleven 3D
+                        </h1>
+                        <span id="header-branch-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                            <i class="fa-solid fa-gas-pump mr-1"></i> สาขา 5258 (NL) (พนักงาน 17 คน)
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        ข้อมูลจริงทั้ง 6 สาขาในปั๊ม (รวม 7-Delivery &amp; Counter Service) • คำนวณภาระงาน • จำลอง 3 มิติ
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Controls & Branch Selector -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1.5 bg-sky-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-sky-200 dark:border-slate-700">
+                    <i class="fa-solid fa-table text-sky-600 dark:text-sky-400 text-xs"></i>
+                    <input type="text" id="input-gsheet-url" value="https://script.google.com/macros/s/AKfycbw6M2j0dNBHKuzponpz3OZxh8ApzgcOLkM-9iA6UpLzz0Y9VopjJ4u2WFuqzktz815o/exec"
+                        placeholder="วางลิงก์ Apps Script (/exec) หรือ CSV..."
+                        class="w-36 sm:w-48 bg-transparent text-xs text-slate-700 dark:text-slate-200 focus:outline-none truncate" title="ลิงก์ Google Apps Script Web App (/exec) หรือ Google Sheets CSV">
+                    <button id="btn-sync-gsheet" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 cursor-pointer">
+                        <i id="sync-icon" class="fa-solid fa-cloud-arrow-down"></i>
+                        <span>ซิงก์ Sheet</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-1.5 bg-emerald-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-slate-700">
+                    <i class="fa-solid fa-store text-seven-green dark:text-emerald-400 text-xs"></i>
+                    <select id="select-branch-top" class="bg-transparent font-bold text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none cursor-pointer">
+                        <option value="5258">สาขา 5258 (NL) • พนักงาน 17 คน</option>
+                        <option value="10666">สาขา 10666 (NP) • พนักงาน 16 คน</option>
+                        <option value="7397">สาขา 7397 (VP) • พนักงาน 15 คน</option>
+                        <option value="8148">สาขา 8148 (PP) • พนักงาน 15 คน</option>
+                        <option value="13284">สาขา 13284 (SP) • พนักงาน 14 คน</option>
+                        <option value="15313">สาขา 15313 (NS) • พนักงาน 14 คน</option>
+                    </select>
+                </div>
+
+                <button id="btn-reset-defaults" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>รีเซ็ตค่าเริ่มต้น</span>
+                </button>
+                <button id="btn-theme-toggle" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-400 transition cursor-pointer" title="สลับโหมดสว่าง/มืด">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-banner" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 dark:bg-slate-800 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 text-sm">
+            <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+            <span id="toast-message">อัปเดตข้อมูลสำเร็จ</span>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <main class="max-w-[1600px] mx-auto px-4 py-5 space-y-5">
+
+        <!-- Top KPI Summary Cards -->
+        <section id="kpi-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Populated by renderKPICards() -->
+        </section>
+
+        <!-- Main Workspace Grid: Left = 3D Store Simulation, Right = Parameters Table -->
+        <div id="workspace-top-grid" class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+
+            <!-- LEFT COLUMN (7 cols on XL): 3D Store Simulation & Controls -->
+            <div class="xl:col-span-7 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 flex flex-col">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                            แบบจำลองร้าน 7-Eleven 3 มิติ (Interactive 3D)
+                        </h2>
+                    </div>
+
+                    <!-- Mode Switcher -->
+                    <div class="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <button id="btn-mode-normal" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-seven-green text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-store"></i>
+                            <span>วันปกติ (3 กะ / 8 ชม.)</span>
+                        </button>
+                        <button id="btn-mode-festival" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-seven-red transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-fire-flame-curved text-seven-orange"></i>
+                            <span>เทศกาล (2 กะ / 12 ชม.)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Mode Status Banner -->
+                <div id="active-mode-bar" class="mb-2.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs">
+                    <span id="active-mode-bar-text" class="font-semibold text-seven-green dark:text-emerald-300">
+                        <i class="fa-solid fa-circle-info mr-1"></i> โหมดวันปกติ
+                    </span>
+                    <span id="active-mode-bar-badge" class="px-2 py-0.5 rounded-full bg-seven-green text-white text-[10px] font-bold">
+                        NORMAL 3-SHIFT
+                    </span>
+                </div>
+
+                <!-- Shift View Tabs -->
+                <div id="shift-view-tabs" class="flex flex-wrap items-center gap-1.5 mb-3"></div>
+
+                <!-- 3D Viewport Container (No floating sales-floor labels) -->
+                <div class="relative w-full h-[380px] sm:h-[440px] rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-inner">
+                    <div id="canvas-container"></div>
+
+                    <!-- Legend Overlay (Bottom Left) -->
+                    <div class="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md text-white px-3 py-2 rounded-xl border border-slate-700/80 text-[11px] space-y-1 pointer-events-none">
+                        <div class="font-semibold text-slate-300 mb-0.5">สัญลักษณ์ในฉาก 3D:</div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                            <span>พนักงาน 7-Eleven (ชุดเขียว/ส้ม)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span>
+                            <span>ลูกค้าที่เข้ามาใช้บริการในกะ</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="status-ring-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+                            <span id="status-ring-text">วงแหวนพื้น: คล่องตัว</span>
+                        </div>
+                    </div>
+
+                    <!-- Camera Controls Overlay (Top Right) -->
+                    <div class="absolute top-3 right-3 flex flex-col gap-1.5">
+                        <button id="btn-cam-overview" class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-white text-[11px] font-medium border border-slate-700 backdrop-blur-sm transition cursor-pointer">
+                            <i class="fa-solid fa-video mr-1 text-emerald-400"></i>มุมสูงทั้งร้าน
+                        </button>
+                        <button id="btn-cam-pos" class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-white text-[11px] font-medium border border-slate-700 backdrop-blur-sm transition cursor-pointer">
+                            <i class="fa-solid fa-cash-register mr-1 text-amber-400"></i>ซูมหน้าเคาน์เตอร์
+                        </button>
+                        <button id="btn-cam-parking" class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-white text-[11px] font-medium border border-slate-700 backdrop-blur-sm transition cursor-pointer">
+                            <i class="fa-solid fa-gas-pump mr-1 text-sky-400"></i>ลานจอดรถหน้าปั๊ม
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3D Helper Hint -->
+                <div class="mt-2.5 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 gap-2">
+                    <span><i class="fa-solid fa-hand-pointer mr-1 text-seven-orange"></i>ลากเมาส์หรือใช้นิ้วเลื่อนเพื่อหมุนมุมมอง 3D • เลื่อนลูกกลิ้งเพื่อซูมเข้า-ออก</span>
+                    <span id="3d-render-summary" class="font-medium text-slate-700 dark:text-slate-300">กำลังแสดงผลโมเดล 3D</span>
+                </div>
+            </div>
+            <div class="mt-1.5 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <span id="gsheet-sync-status"><i class="fa-solid fa-link text-sky-500 mr-1"></i>พร้อมเชื่อมต่อ Google Sheets CSV อัตโนมัติ</span>
+                <span>อัปเดตข้อมูลล่าสุดจาก Sheet เพื่อคำนวณกำลังคนรายวัน</span>
+            </div>
+        </div>
+    </header>
+
+            <!-- RIGHT COLUMN (5 cols on XL): Store Parameters Table -->
+            <div class="xl:col-span-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-seven-green dark:text-emerald-400 flex items-center justify-center">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                                ตารางตัวแปรร้านและสมมติฐานการคำนวณ
+                            </h2>
+                            <p class="text-[11px] text-slate-500">เลือกสาขาหรือปรับแก้ตัวเลขได้ทันที ระบบอัปเดตทุกตารางอัตโนมัติ</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                                <th class="py-2.5 px-3 font-bold">พารามิเตอร์ (ข้อมูลร้าน)</th>
+                                <th class="py-2.5 px-3 text-right font-bold">ค่าที่ใช้คำนวณ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                            <!-- Branch Selector Row -->
+                            <tr class="bg-emerald-50/40 dark:bg-emerald-950/20">
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">เลือกรหัสสาขา (6 สาขาในปั๊ม)</div>
+                                    <div class="text-[11px] text-slate-500">โหลดยอดลูกค้าจริง, สัดส่วนรายกะ และจำนวนคนของสาขา</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <select id="select-branch-param" class="px-2 py-1 font-bold text-xs text-seven-green dark:text-emerald-400 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-slate-600 rounded-lg focus:outline-none cursor-pointer">
+                                        <option value="5258">5258 (NL) • 17 คน</option>
+                                        <option value="10666">10666 (NP) • 16 คน</option>
+                                        <option value="7397">7397 (VP) • 15 คน</option>
+                                        <option value="8148">8148 (PP) • 15 คน</option>
+                                        <option value="13284">13284 (SP) • 14 คน</option>
+                                        <option value="15313">15313 (NS) • 14 คน</option>
+                                    </select>
+                                </td>
+                            </tr>
+
+                            <!-- Normal Daily Customers -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">ฐานลูกค้าเฉลี่ยจริง (คน/วัน)</div>
+                                    <div class="text-[11px] text-slate-500">รวมสัปดาห์: <strong id="weekly-total-customers" class="text-slate-700 dark:text-slate-200">7,294 คน</strong> | วันที่เลือก: <strong id="effective-day-customers" class="text-seven-green dark:text-emerald-400">1,094 คน/วัน</strong></div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-total-customers" value="1042" min="50" max="20000" step="10"
+                                        class="w-24 px-2 py-1 text-right font-bold text-seven-green dark:text-emerald-400 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-seven-green">
+                                </td>
+                            </tr>
+
+                            <!-- 7-Day Traffic % Share (Must Sum to 100% across Mon - Sun) -->
+                            <tr>
+                                <td class="py-2.5 px-3" colspan="2">
+                                    <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+                                        <span class="font-semibold text-slate-800 dark:text-slate-100">สัดส่วนลูกค้าจริง 7 วันของสาขา (รวม 100%)</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <span id="day-pct-sum-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">รวม: 100%</span>
+                                            <button type="button" id="btn-normalize-days" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-seven-orange hover:bg-orange-600 text-white transition cursor-pointer">
+                                                ปรับให้ครบ 100%
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-7 gap-1 text-center">
+                                        <div data-day="0" class="day-card cursor-pointer rounded-lg p-1 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition">
+                                            <div class="text-[10px] font-bold text-slate-500">จ</div>
+                                            <input type="number" id="input-day-pct-0" value="14" min="0" max="100" step="1" class="w-full text-center font-bold text-xs bg-transparent text-slate-800 dark:text-white focus:outline-none">
+                                        </div>
+                                        <div data-day="1" class="day-card cursor-pointer rounded-lg p-1 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition">
+                                            <div class="text-[10px] font-bold text-slate-500">อ</div>
+                                            <input type="number" id="input-day-pct-1" value="14" min="0" max="100" step="1" class="w-full text-center font-bold text-xs bg-transparent text-slate-800 dark:text-white focus:outline-none">
+                                        </div>
+                                        <div data-day="2" class="day-card cursor-pointer rounded-lg p-1 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition">
+                                            <div class="text-[10px] font-bold text-slate-500">พ</div>
+                                            <input type="number" id="input-day-pct-2" value="14" min="0" max="100" step="1" class="w-full text-center font-bold text-xs bg-transparent text-slate-800 dark:text-white focus:outline-none">
+                                        </div>
+                                        <div data-day="3" class="day-card cursor-pointer rounded-lg p-1 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition">
+                                            <div class="text-[10px] font-bold text-slate-500">พฤ</div>
+                                            <input type="number" id="input-day-pct-3" value="14" min="0" max="100" step="1" class="w-full text-center font-bold text-xs bg-transparent text-slate-800 dark:text-white focus:outline-none">
+                                        </div>
+                                        <div data-day="4" class="day-card cursor-pointer rounded-lg p-1 border-2 border-seven-orange bg-orange-50 dark:bg-orange-950/40 transition">
+                                            <div class="text-[10px] font-bold text-seven-orange">ศ</div>
+                                            <input type="number" id="input-day-pct-4" value="15" min="0" max="100" step="1" class="w-full text-center font-bold text-xs bg-transparent text-seven-orange focus:outline-none">
+                                        </div>
+                                        <div data-day="5" class="day-card cursor-pointer rounded-lg p-1 border border-orange-200 dark:border-orange-800/60 bg-orange-50/50 dark:bg-slate-800 transition">
+                                            <div class="text-[10px] font-bold text-seven-red">ส</div>
+                                            <input type="number" id="input-day-pct-5" value="15" min="0" max="100" step="1" class="w-full text-center font-bold text-xs bg-transparent text-seven-red focus:outline-none">
+                                        </div>
+                                        <div data-day="6" class="day-card cursor-pointer rounded-lg p-1 border border-orange-200 dark:border-orange-800/60 bg-orange-50/50 dark:bg-slate-800 transition">
+                                            <div class="text-[10px] font-bold text-seven-red">อา</div>
+                                            <input type="number" id="input-day-pct-6" value="14" min="0" max="100" step="1" class="w-full text-center font-bold text-xs bg-transparent text-seven-red focus:outline-none">
+                                        </div>
+                                    </div>
+                                    <div class="mt-1 text-[10px] text-slate-500 flex justify-between">
+                                        <span>คลิกเลือกวัน (จ-อา) เพื่อจำลองยอดขายและกำลังคนรายวัน</span>
+                                        <span id="selected-day-badge" class="font-semibold text-seven-orange">วันศุกร์ (15% ของสัปดาห์)</span>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Active Daily Staff -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">พนักงานมาทำงานจริงวันปกติ (คน/วัน)</div>
+                                    <div class="text-[11px] text-slate-500">จัดลง 3 กะ: <span id="staff-sum-helper" class="font-semibold text-seven-green">รวม 14 คน (6/6/2)</span></div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-total-staff" value="14" min="3" max="100" step="1"
+                                        class="w-24 px-2 py-1 text-right font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-seven-green">
+                                </td>
+                            </tr>
+
+                            <!-- Total Branch Staff Headcount -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">จำนวนพนักงานทั้งหมดของสาขา (คน)</div>
+                                    <div class="text-[11px] text-slate-500">รวมวันหยุดหมุนเวียน (ทำงาน 6 วัน / หยุด 1 วัน)</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-max-headcount" value="17" min="6" max="50" step="1"
+                                        class="w-24 px-2 py-1 text-right font-bold text-blue-600 dark:text-blue-400 bg-slate-50 dark:bg-slate-800 border border-blue-300 dark:border-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </td>
+                            </tr>
+
+                            <!-- Normal Shift % Distribution (Calculated from Real Shift Sales Data) -->
+                            <tr>
+                                <td class="py-2.5 px-3" colspan="2">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-semibold text-slate-800 dark:text-slate-100">สัดส่วนลูกค้า 3 กะจริงของสาขา (%)</span>
+                                        <span id="shift-pct-sum-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">รวม: 100%</span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div class="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                            <span class="text-[11px] text-slate-500">กะ 1 เช้า</span>
+                                            <input type="number" id="input-pct-s1" value="44" min="0" max="100" class="w-12 text-right font-bold text-xs bg-transparent focus:outline-none">
+                                        </div>
+                                        <div class="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                            <span class="text-[11px] text-slate-500">กะ 2 บ่าย</span>
+                                            <input type="number" id="input-pct-s2" value="44" min="0" max="100" class="w-12 text-right font-bold text-xs bg-transparent focus:outline-none">
+                                        </div>
+                                        <div class="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                            <span class="text-[11px] text-slate-500">กะ 3 ดึก</span>
+                                            <input type="number" id="input-pct-s3" value="12" min="0" max="100" class="w-12 text-right font-bold text-xs bg-transparent focus:outline-none">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Service Time per Customer -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">เวลาให้บริการเฉลี่ย 1/μ (นาที/ลูกค้า 1 คน)</div>
+                                    <div class="text-[11px] text-slate-500">อ้างอิงวิจัย M/M/S: μ ≈ 1.0 นาที/คน (60 คน/ชม./เครื่อง)</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-service-time" value="1.0" min="0.5" max="10" step="0.1"
+                                        class="w-24 px-2 py-1 text-right font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-seven-green">
+                                </td>
+                            </tr>
+
+                            <!-- Non-POS Workload % -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">สัดส่วนงานเติมของ / 7-Delivery / ทำความสะอาด (%)</div>
+                                    <div class="text-[11px] text-slate-500">งานหลังร้านและจัดเรียงสินค้าไม่ยืนเครื่อง POS</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-non-pos" value="30" min="0" max="80" step="5"
+                                        class="w-24 px-2 py-1 text-right font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-seven-green">
+                                </td>
+                            </tr>
+
+                            <!-- Holiday / Day-off Buffer % -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">อัตราเผื่อวันหยุดประจำสัปดาห์ / ลาป่วย (%)</div>
+                                    <div class="text-[11px] text-slate-500">เพื่อคำนวณจำนวนพนักงานขึ้นทะเบียนทั้งหมด</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-buffer" value="20" min="0" max="50" step="5"
+                                        class="w-24 px-2 py-1 text-right font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-seven-green">
+                                </td>
+                            </tr>
+
+                            <!-- POS Counters Count -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">จำนวนเครื่องแคชเชียร์ (POS) ในร้าน</div>
+                                    <div class="text-[11px] text-slate-500">แสดงผลตามจำนวนจริงในฉากจำลอง 3D</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-pos-count" value="3" min="1" max="6" step="1"
+                                        class="w-24 px-2 py-1 text-right font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-seven-green">
+                                </td>
+                            </tr>
+
+                            <!-- All Cafe & Hot Food % -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">ลูกค้าสั่ง All Café / อาหารอุ่นร้อน (%)</div>
+                                    <div class="text-[11px] text-slate-500">คำนวณพนักงานประจำจุดชงกาแฟและอุ่นอาหารแยกจาก POS</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-cafe-pct" value="25" min="0" max="80" step="5"
+                                        class="w-24 px-2 py-1 text-right font-bold text-amber-600 dark:text-amber-400 bg-slate-50 dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                </td>
+                            </tr>
+
+                            <!-- 7-Delivery Orders per Day -->
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-semibold text-slate-800 dark:text-slate-100">ยอดออเดอร์ 7-Delivery เฉลี่ย (บิล/วัน)</div>
+                                    <div class="text-[11px] text-slate-500">รวมพนักงานจัดออเดอร์และไรเดอร์วิ่งส่งของในกะเช้า-บ่าย</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right">
+                                    <input type="number" id="input-delivery-orders" value="85" min="0" max="500" step="5"
+                                        class="w-24 px-2 py-1 text-right font-bold text-sky-600 dark:text-sky-400 bg-slate-50 dark:bg-slate-800 border border-sky-300 dark:border-sky-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLE 1: Normal Day 3-Shift What-if Analysis -->
+        <section id="table1-section" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 text-seven-green dark:text-emerald-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-table-list"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">
+                                ตารางที่ 1: วิเคราะห์ภาระงานและจัดสรรพนักงานรายกะ (ทฤษฎีแถวคอย M/M/S ตามช่วงเวลาพีค)
+                            </h2>
+                            <span id="t1-branch-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-seven-green dark:bg-emerald-900/50 dark:text-emerald-300">
+                                สาขา 5258 (NL) • พนักงาน 17 คน
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            อ้างอิงวิจัย M/M/S (วฤดดา และคณะ, 2569): วิเคราะห์ชั่วโมงเร่งด่วน 07:00-08:00, 15:00-16:00, 19:00-20:00 น. • เกณฑ์คล่องตัวรอคิว ≤ 3 คน/แถว
+                        </p>
+                    </div>
+                </div>
+
+                <button id="btn-auto-balance" class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-seven-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>จัดตารางกะอัตโนมัติ (3 กะ)</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead>
+                        <tr class="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+                            <th class="py-3 px-3 font-bold">กะการทำงาน (9 ชม. รวมพัก 1 ชม.)</th>
+                            <th class="py-3 px-3 text-center font-bold">สัดส่วนลูกค้าจริง</th>
+                            <th class="py-3 px-3 text-right font-bold">จำนวนลูกค้า + เดลิเวอรี</th>
+                            <th class="py-3 px-3 text-center font-bold">จัดพนักงานลงกะ (คน)</th>
+                            <th class="py-3 px-3 text-right font-bold">ลูกค้า / พนักงาน 1 คน</th>
+                            <th class="py-3 px-3 text-center font-bold">คิวช่วงพีค / เวลารอ</th>
+                            <th class="py-3 px-3 text-center font-bold">เกณฑ์แนะนำรวมทุกหน้าที่ (ยืนกะ / เผื่อหยุด)</th>
+                            <th class="py-3 px-3 text-center font-bold">สถานะความหนาแน่น</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shift-table-body" class="divide-y divide-slate-200 dark:divide-slate-800"></tbody>
+                    <tfoot id="shift-table-foot" class="bg-slate-50 dark:bg-slate-800/60 font-bold border-t-2 border-slate-300 dark:border-slate-700"></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- RESEARCH BENCHMARK & M/M/S QUEUING INSIGHTS PANEL -->
+        <section id="research-section" class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl border border-slate-700 shadow-sm p-4 sm:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm sm:text-base text-white">
+                            สรุปการประยุกต์ใช้งายวิจัย M/M/S (วารสารปัญญาภิวัฒน์ ปีที่ 18 ฉบับที่ 2, 2569) กับทั้ง 6 สาขาของคุณ
+                        </h3>
+                        <p class="text-[11px] text-slate-300">
+                            อ้างอิง: "การออกแบบตารางการทำงานของพนักงานในร้านสะดวกซื้อ เพื่อเพิ่มประสิทธิภาพการให้บริการ ด้วยแบบจำลองแถวคอยที่มีอัตราการมาถึงเปลี่ยนแปลงตามเวลา"
+                        </p>
+                    </div>
+                </div>
+                <span id="mms-utilization-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    M/M/S Active
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div class="bg-slate-800/80 rounded-2xl p-3 border border-slate-700/80">
+                    <div class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-gauge-high mr-1"></i>1. เกณฑ์รับลูกค้าต่อพนักงาน 1 คน (Service Rate μ)</div>
+                    <p class="text-slate-300 leading-relaxed">
+                        จากผลวิจัย อัตราบริการเฉลี่ย <strong>μ = 1 คน/นาที (60 คน/ชม./ช่อง)</strong> เมื่อหักงานเติมของ/7-Delivery 30% พนักงาน 1 คนในกะ 8 ชม. จะรับลูกค้าได้เหมาะสมที่ <strong>~280 คน/กะ</strong> (หรือเฉลี่ยทั้งร้าน ~70–85 คน/พนักงานทั้งหมด 1 คน/วัน)
+                    </p>
+                </div>
+                <div class="bg-slate-800/80 rounded-2xl p-3 border border-slate-700/80">
+                    <div class="font-bold text-amber-400 mb-1"><i class="fa-solid fa-clock mr-1"></i>2. ชั่วโมงเร่งด่วน 3 ช่วง (Reaching Hours)</div>
+                    <p class="text-slate-300 leading-relaxed">
+                        ลูกค้ากระจุกตัวสูงสุดใน 3 ช่วงเวลา คือ <strong>07:00–08:00 น.</strong> (กะเช้า), <strong>15:00–16:00 น.</strong> และ <strong>19:00–20:00 น.</strong> (กะบ่าย) ซึ่งมีอัตราการเข้าใช้บริการสูงถึง <strong>50–80+ คน/ชม.</strong> จึงต้องเปิดครบ 3 ช่องบริการ (S = 3)
+                    </p>
+                </div>
+                <div class="bg-slate-800/80 rounded-2xl p-3 border border-slate-700/80">
+                    <div class="font-bold text-sky-400 mb-1"><i class="fa-solid fa-people-arrows mr-1"></i>3. การเปิดช่องพิเศษ &amp; ผลลัพธ์ความพึงพอใจ</div>
+                    <p class="text-slate-300 leading-relaxed">
+                        งานวิจัยยืนยันว่าการเปิดช่องบริการเพิ่มจาก 2 เป็น 3 ช่องช่วงพีค ช่วยลดเวลารอคอย (Wq) เหลือ <strong>0.51–1.01 นาที/คน</strong> และดันคะแนนคุณภาพบริการร้านสะดวกซื้อจาก <strong>80% พุ่งขึ้นเป็น 100% เต็ม</strong>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TABLE 2: Festival Songkran / New Year 2-Shift 12-Hour What-if Analysis -->
+        <section id="table2-section" class="bg-white dark:bg-slate-900 rounded-3xl border-2 border-orange-200 dark:border-orange-900/60 shadow-sm p-4 sm:p-5 relative overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-seven-orange to-seven-red text-white flex items-center justify-center text-lg shadow-sm">
+                        <i class="fa-solid fa-fire-flame-curved"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">
+                                ตารางที่ 2: ช่วงเทศกาลสงกรานต์ / ปีใหม่ (2 กะ / กะละ 12 ชม. | สาขาในปั๊มทางผ่าน)
+                            </h2>
+                            <span id="t2-branch-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-seven-orange dark:bg-orange-950 dark:text-orange-300">
+                                สาขา 5258 (NL) • พนักงาน 17 คน
+                            </span>
+                            <span id="t2-fest-dates-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-seven-red dark:bg-red-950 dark:text-red-400">
+                                ช่วงพีค: 13 - 15 เม.ย. (พีค 2,046 คน)
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            แบ่งเป็น 2 กะ กะละ 12 ชั่วโมง (ทำงาน 8 ชม. + พัก 1 ชม. + OT 3 ชม.): กะที่ 1 (กลางวัน 06:00-18:00) และ กะที่ 3 (กลางคืน 18:00-06:00)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Festival Inputs & Auto Balance -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <div class="flex items-center gap-2 bg-orange-50 dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-orange-200 dark:border-slate-700">
+                        <label for="input-fest-customers" class="text-xs font-bold text-slate-700 dark:text-slate-200">ลูกค้าช่วงเทศกาล/วัน:</label>
+                        <input type="number" id="input-fest-customers" value="1960" min="500" max="20000" step="50"
+                            class="w-24 px-2 py-1 text-right font-bold text-seven-red bg-white dark:bg-slate-900 border border-orange-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-seven-orange">
+                        <span class="text-xs text-slate-500">คน</span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs">
+                        <span class="font-semibold text-slate-600 dark:text-slate-300">สัดส่วน %:</span>
+                        <span class="text-slate-500">กะ1</span>
+                        <input type="number" id="input-fest-pct-s1" value="50" min="0" max="100" class="w-11 text-center font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded py-0.5">
+                        <span class="text-slate-500">กะ3</span>
+                        <input type="number" id="input-fest-pct-s3" value="50" min="0" max="100" class="w-11 text-center font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded py-0.5">
+                    </div>
+
+                    <button id="btn-auto-balance-fest" class="px-4 py-2 rounded-2xl bg-gradient-to-r from-seven-red to-seven-orange hover:from-red-600 hover:to-orange-600 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>จัดตาราง 2 กะเทศกาลอัตโนมัติ</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-orange-200/80 dark:border-slate-800">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead>
+                        <tr class="bg-orange-50/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-b border-orange-200 dark:border-slate-700">
+                            <th class="py-3 px-3 font-bold">กะช่วงเทศกาล (12 ชม./กะ)</th>
+                            <th class="py-3 px-3 text-center font-bold">สัดส่วนลูกค้า</th>
+                            <th class="py-3 px-3 text-right font-bold">จำนวนลูกค้าในกะ</th>
+                            <th class="py-3 px-3 text-center font-bold">จัดพนักงานลงกะ (คน)</th>
+                            <th class="py-3 px-3 text-right font-bold">ลูกค้า / พนักงาน 1 คน</th>
+                            <th class="py-3 px-3 text-center font-bold">คิวช่วงพีค / เวลารอ</th>
+                            <th class="py-3 px-3 text-center font-bold">เกณฑ์แนะนำรวมทุกหน้าที่ (ยืนกะชั่วคราว)</th>
+                            <th class="py-3 px-3 text-center font-bold">สถานะความหนาแน่น</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fest-shift-table-body" class="divide-y divide-slate-200 dark:divide-slate-800"></tbody>
+                    <tfoot id="fest-shift-table-foot" class="bg-orange-50/50 dark:bg-slate-800/60 font-bold border-t-2 border-orange-300 dark:border-slate-700"></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- TABLE 3: 7-Day Individual Staff Roster & Rotating Day-Off Schedule -->
+        <section id="table3-roster-section" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg no-print">
+                        <i class="fa-solid fa-calendar-week"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">
+                                ตารางที่ 3: จำลองรายชื่อพนักงานและการจัดกะ + สลับวันหยุดตามภาระงาน (7 วัน จันทร์ - อาทิตย์)
+                            </h2>
+                            <span id="t3-branch-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                                สาขา 5258 (NL) • พนักงาน 17 คน
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            จัดคนลงกะเต็มกำลังช่วง ศุกร์-เสาร์-อาทิตย์ และหมุนเวียนสลับวันหยุด (OFF) วันจันทร์-พฤหัสบดี • <span class="text-blue-600 dark:text-blue-400 font-semibold no-print">คลิกที่ช่องวันของแต่ละคนเพื่อสลับกะ/วันหยุดได้เอง</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 no-print">
+                    <!-- Direct Total Headcount Adjuster in Roster Header -->
+                    <div class="flex items-center gap-2 bg-blue-50 dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-blue-200 dark:border-slate-700">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">จำนวนพนักงานทั้งหมด:</span>
+                        <button type="button" id="btn-roster-hc-minus" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 font-bold text-slate-700 dark:text-white transition cursor-pointer">-</button>
+                        <input type="number" id="input-roster-headcount" value="17" min="6" max="50" step="1"
+                            class="w-14 px-1.5 py-0.5 text-center font-extrabold text-sm text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="button" id="btn-roster-hc-plus" class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 font-bold text-white transition cursor-pointer">+</button>
+                        <span class="text-xs text-slate-500">คน</span>
+                    </div>
+
+                    <span id="roster-headcount-info" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        พนักงานในตาราง: 17 คน (หยุดคนละ 1 วัน/สัปดาห์)
+                    </span>
+                    <button id="btn-regenerate-roster" class="px-3.5 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-shuffle"></i>
+                        <span>สุ่มจัดตารางเวรใหม่</span>
+                    </button>
+                    <button id="btn-export-roster-pdf" class="px-3.5 py-2 rounded-2xl bg-seven-red hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>ส่งออกเป็น PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Legend for Roster Pills -->
+            <div id="roster-legend-bar" class="flex flex-wrap items-center gap-2 mb-3 text-[11px]"></div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead id="roster-table-head" class="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700"></thead>
+                    <tbody id="roster-table-body" class="divide-y divide-slate-200 dark:divide-slate-800"></tbody>
+                    <tfoot id="roster-table-foot" class="bg-slate-50 dark:bg-slate-800/60 font-bold border-t-2 border-slate-300 dark:border-slate-700"></tfoot>
+                </table>
+            </div>
+
+            <!-- Roster Condition Footnote Box -->
+            <div class="mt-3.5 p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs text-slate-700 dark:text-slate-200 space-y-1.5">
+                <div class="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clipboard-check text-seven-orange"></i>
+                    <span>หมายเหตุเงื่อนไขการจัดผลัดและผู้รับผิดชอบประจำกะ:</span>
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 pl-1">
+                    <li><strong>ต้องมีผู้ช่วยผู้จัดการประจำครบทุกผลัด (กะเช้า / กะบ่าย / กะดึก)</strong> ตลอดทั้ง 7 วัน เพื่อดูแลการเปิด-ปิดรอบบัญชี รับส่งสินค้า ตรวจเช็กสต็อก และแก้ไขปัญหาเฉพาะหน้าหน้าร้าน</li>
+                    <li><strong>ผลัดเช้า (กะที่ 1 เวลา 06:00 - 14:00 น.)</strong> สามารถให้ <strong>ผู้จัดการร้าน (ผจก.)</strong> อยู่ปฏิบัติหน้าที่แทนผู้ช่วยผู้จัดการได้ (ในวันที่ผู้ช่วยฯ กะเช้าหยุดประจำสัปดาห์)</li>
+                    <li><strong>วันหยุดของผู้จัดการร้าน (ผจก.)</strong> กำหนดให้หยุดได้ <strong>เฉพาะวันเสาร์ (ส) หรือ วันอาทิตย์ (อา) เท่านั้น</strong> เนื่องจากวันธรรมดา (จันทร์–ศุกร์) ผจก. ต้องอยู่บริหารจัดการเงินสด ฝากเงินธนาคาร และเคลียร์เอกสารบัญชี</li>
+                <li><strong>จัดผู้ช่วยฯ ผลัดดึกเพียง 1 คนต่อคืน:</strong> ผลัดดึก (22:00 - 07:00 น.) มีผู้ช่วยฯ ประจำเพียง 1 คนเท่านั้น (ไม่ให้ผู้ช่วยฯ 2 คนอยู่ซ้อนกันในผลัดดึก) โดยผู้ช่วยฯ ผลัดเช้า-บ่ายจะหมุนเวียนมาช่วยคุมผลัดดึกเฉพาะวันที่ผู้ช่วยฯ ผลัดดึกหยุดประจำสัปดาห์ แล้วจึงให้หยุดพัก (OFF) ในวันถัดไป</li>
+                <li>พนักงานทุกคน (รวม ผจก. และผู้ช่วยฯ) ทำงานสัปดาห์ละ 6 วัน และสลับหยุดประจำสัปดาห์คนละ 1 วัน โดยผู้ช่วยฯ และพนักงานทั่วไปเน้นหยุดช่วงวันจันทร์–พฤหัสบดี เพื่อให้วันศุกร์–อาทิตย์มีกำลังคนเต็มประสิทธิภาพ</li>
+                <li class="text-seven-red dark:text-rose-400 font-semibold"><strong>กฎข้อห้ามสำคัญ (ห้ามควงกะข้ามคืน &amp; การพักหลังออกกะดึก):</strong> พนักงานและผู้ช่วยฯ ที่เข้า <strong>กะ 3 ดึก (22:00 - 07:00 น.) ห้ามเข้า กะ 1 เช้า (06:00 - 15:00 น.) ในวันถัดไปโดยเด็ดขาด</strong> และ<strong>หลีกเลี่ยงการต่อ กะ 2 บ่าย (14:00 - 23:00 น.) ทันทีหลังออกกะดึก</strong> (ให้ยืน <strong>กะ 3 ดึกต่อเนื่อง</strong> หรือจัดเป็น <strong>วันหยุด (OFF)</strong> ในวันถัดไปเพื่อให้พนักงานได้พักผ่อนเต็มที่)</li>
+            </div>
+            <div id="roster-supervisor-alert" class="pt-1"></div>
+            </div>
+        </section>
+
+        <!-- CALCULATION STANDARDS & REFERENCE FOOTNOTE SECTION (SEPARATE BOX) -->
+        <section id="calc-ref-section" class="bg-white dark:bg-slate-900 rounded-3xl border border-sky-200 dark:border-sky-900/60 shadow-sm p-4 sm:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                            หมายเหตุมาตรฐานตัวเลขและแหล่งอ้างอิงที่ใช้ในการคำนวณ (Calculation Standards &amp; References)
+                        </h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            สรุปเกณฑ์เวลาปฏิบัติงานและแหล่งที่มาของข้อมูลแต่ละตำแหน่ง (แยกส่วนจากเงื่อนไขการจัดตารางเวรด้านบน)
+                        </p>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                    เกณฑ์คำนวณกำลังคน 4 ตำแหน่ง
+                </span>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+                            <th class="py-2.5 px-3 font-bold">ตำแหน่ง / กิจกรรมบริการ</th>
+                            <th class="py-2.5 px-3 font-bold">ตัวเลขมาตรฐานที่ใช้คำนวณ</th>
+                            <th class="py-2.5 px-3 font-bold">ประเภทแหล่งข้อมูล</th>
+                            <th class="py-2.5 px-3 font-bold">แหล่งอ้างอิง / คำอธิบายเพิ่มเติม</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        <tr>
+                            <td class="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-100">
+                                <i class="fa-solid fa-cash-register text-seven-green mr-1.5"></i>1. แคชเชียร์หน้าเครื่อง (POS)
+                            </td>
+                            <td class="py-2.5 px-3 font-bold text-seven-green dark:text-emerald-400">1.0 นาที / ลูกค้า 1 คน (60 คน/ชม./เครื่อง)</td>
+                            <td class="py-2.5 px-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">มีแหล่งอ้างอิงงานวิจัย</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">
+                                อ้างอิงงานวิจัย M/M/S: วฤดดา และคณะ (2569), <em>วารสารปัญญาภิวัฒน์ ปีที่ 18 ฉบับที่ 2</em> (หน้า 9–11) โดยคิดประสิทธิภาพการทำงานที่เหมาะสมไม่เกิน 85% ของเวลาหน้าเครื่องสุทธิ
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-100">
+                                <i class="fa-solid fa-fire-burner text-amber-500 mr-1.5"></i>2. อุ่นอาหารไมโครเวฟ &amp; ชง All Café
+                            </td>
+                            <td class="py-2.5 px-3 font-bold text-amber-600 dark:text-amber-400">~3.0 นาที / 1 ครั้ง (หรือ ~130–160 รายการ/คน/กะ)</td>
+                            <td class="py-2.5 px-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">ค่าม็อกอัพ (Mockup)</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">
+                                ค่าม็อกอัพเบื้องต้นสำหรับการอุ่นอาหารไมโครเวฟ/ชงเครื่องดื่ม All Café ต่อรอบ (ยังไม่มีเอกสารอ้างอิงเฉพาะ สามารถปรับ % ลูกค้า All Café/อุ่นร้อน ในตารางตัวแปรด้านบนได้)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-100">
+                                <i class="fa-solid fa-motorcycle text-sky-500 mr-1.5"></i>3. พนักงานจัดส่ง 7-Delivery
+                            </td>
+                            <td class="py-2.5 px-3 font-bold text-sky-600 dark:text-sky-400">~45 นาที / 1 ออเดอร์ (รวมจัดของ + วิ่งส่งไป-กลับ)</td>
+                            <td class="py-2.5 px-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">ค่าม็อกอัพ (Mockup)</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">
+                                ค่าม็อกอัพสำหรับการจัดออเดอร์และวิ่งส่งสินค้าในพื้นที่สาขาปั๊มน้ำมัน (คิดเฉลี่ย 1 คนรับผิดชอบได้ประมาณ 38–45 บิลต่อกะ 8–11 ชม. ในช่วงกะเช้าและกะบ่าย)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-100">
+                                <i class="fa-solid fa-boxes-stacked text-purple-500 mr-1.5"></i>4. งานเติมสินค้า / หลังร้าน / เผื่อวันหยุด
+                            </td>
+                            <td class="py-2.5 px-3 font-bold text-purple-600 dark:text-purple-400">หักเวลางานหลังร้าน 30% และเผื่อวันหยุด +20%</td>
+                            <td class="py-2.5 px-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300">เกณฑ์ปฏิบัติการ + Mockup</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">
+                                การเผื่อวันหยุด 20% อ้างอิงตามกฎการทำงาน 6 วัน หยุด 1 วัน/สัปดาห์ (~14.3% + เผื่อลาป่วย/ลากิจ ~5.7%) ส่วนสัดส่วนงานหลังร้าน 30% เป็นค่าม็อกอัพที่ปรับแก้ได้ในตารางพารามิเตอร์
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Logic & Three.js 3D Engine -->
+    <script>
+        // =========================================================================
+        // 1. REAL 6-BRANCH DATA & STATE MANAGEMENT
+        // =========================================================================
+        const BRANCH_DATA = {
+            '5258': {
+                code: '5258',
+                label: '5258 (NL)',
+                totalHeadcount: 17,
+                activeDailyStaff: 14,
+                shiftStaff: [6, 6, 2],
+                avgCustomers: 1042,
+                dayPcts: [14, 14, 14, 14, 15, 15, 14],
+                shiftPcts: [44, 44, 12],
+                deliveryOrders: 95,
+                cafePct: 25,
+                festCustomers: 1960,
+                festPeakMax: 2046,
+                festDates: '13 - 15 เม.ย.',
+                festShiftStaff: [9, 8]
+            },
+            '10666': {
+                code: '10666',
+                label: '10666 (NP)',
+                totalHeadcount: 16,
+                activeDailyStaff: 14,
+                shiftStaff: [6, 6, 2],
+                avgCustomers: 1007,
+                dayPcts: [12, 12, 12, 13, 15, 18, 18],
+                shiftPcts: [45, 43, 12],
+                deliveryOrders: 37,
+                cafePct: 25,
+                festCustomers: 1721,
+                festPeakMax: 2294,
+                festDates: '14 - 19 เม.ย.',
+                festShiftStaff: [8, 8]
+            },
+            '7397': {
+                code: '7397',
+                label: '7397 (VP)',
+                totalHeadcount: 15,
+                activeDailyStaff: 13,
+                shiftStaff: [6, 5, 2],
+                avgCustomers: 840,
+                dayPcts: [12, 12, 12, 12, 17, 18, 17],
+                shiftPcts: [49, 38, 13],
+                deliveryOrders: 75,
+                cafePct: 25,
+                festCustomers: 1759,
+                festPeakMax: 2368,
+                festDates: '10 - 13 เม.ย.',
+                festShiftStaff: [8, 7]
+            },
+            '8148': {
+                code: '8148',
+                label: '8148 (PP)',
+                totalHeadcount: 15,
+                activeDailyStaff: 13,
+                shiftStaff: [6, 5, 2],
+                avgCustomers: 815,
+                dayPcts: [13, 12, 11, 12, 15, 18, 19],
+                shiftPcts: [48, 39, 13],
+                deliveryOrders: 70,
+                cafePct: 25,
+                festCustomers: 1507,
+                festPeakMax: 1789,
+                festDates: '14 - 19 เม.ย.',
+                festShiftStaff: [8, 7]
+            },
+            '13284': {
+                code: '13284',
+                label: '13284 (SP)',
+                totalHeadcount: 14,
+                activeDailyStaff: 12,
+                shiftStaff: [5, 5, 2],
+                avgCustomers: 766,
+                dayPcts: [14, 15, 15, 16, 14, 13, 13],
+                shiftPcts: [44, 44, 12],
+                deliveryOrders: 65,
+                cafePct: 20,
+                festCustomers: 1246,
+                festPeakMax: 1522,
+                festDates: '11 - 15 เม.ย.',
+                festShiftStaff: [7, 7]
+            },
+            '15313': {
+                code: '15313',
+                label: '15313 (NS)',
+                totalHeadcount: 14,
+                activeDailyStaff: 12,
+                shiftStaff: [6, 4, 2],
+                avgCustomers: 678,
+                dayPcts: [12, 12, 12, 12, 17, 18, 17],
+                shiftPcts: [46, 41, 13],
+                deliveryOrders: 60,
+                cafePct: 20,
+                festCustomers: 1461,
+                festPeakMax: 1779,
+                festDates: '10 - 12 เม.ย.',
+                festShiftStaff: [7, 7]
+            }
+        };
+
+        const DEFAULT_STATE = {
+            selectedBranchCode: '5258',
+            totalCustomers: 1042,
+            totalStaff: 14,
+            maxHeadcount: 17,
+            shiftPcts: [44, 44, 12],
+            shiftStaff: [6, 6, 2],
+            shiftHours: 8,
+            serviceTimeMin: 1.0,
+            nonPosPct: 30,
+            bufferPct: 20,
+            posCount: 3,
+            cafePct: 25,
+            deliveryOrders: 95,
+            dayPcts: [14, 14, 14, 14, 15, 15, 14],
+            dayNames: ['วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์', 'วันอาทิตย์'],
+            dayShortNames: ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสฯ', 'ศุกร์', 'เสาร์', 'อาทิตย์'],
+            selectedDayIdx: 4,
+            festCustomers: 1960,
+            festShiftPcts: [50, 50],
+            festShiftStaff: [9, 8],
+            festShiftHours: 11,
+            simMode: 'normal',
+            activeShiftView: 0,
+            isDark: false,
+            gsheetUrl: 'https://script.google.com/macros/s/AKfycbw6M2j0dNBHKuzponpz3OZxh8ApzgcOLkM-9iA6UpLzz0Y9VopjJ4u2WFuqzktz815o/exec'
+        };
+
+        let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        let rosterPlan = [];
+
+        const STAFF_POOL = [
+            { name: 'พี่เอ (ผจก.ร้าน)', role: 'ผู้จัดการร้าน / คุมผลัดเช้า', prefShift: 0, isMgr: true },
+            { name: 'พี่บี (ผู้ช่วยฯ)', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดเช้า-บ่าย', prefShift: 0, isAsst: true },
+            { name: 'พี่นัท (ผู้ช่วยฯ)', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดบ่าย', prefShift: 1, isAsst: true },
+            { name: 'พี่กานต์ (ผู้ช่วยฯ)', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดดึก', prefShift: 2, isAsst: true },
+            { name: 'น้องแนน', role: 'แคชเชียร์หลัก POS 1', prefShift: 0 },
+            { name: 'น้องมายด์', role: 'All Café & อุ่นอาหาร', prefShift: 0 },
+            { name: 'น้องต้น', role: '7-Delivery & เติมสินค้า', prefShift: 0 },
+            { name: 'น้องพลอย', role: 'แคชเชียร์ & Counter Service', prefShift: 0 },
+            { name: 'น้องภูมิ', role: 'เติมสินค้า & สต็อกเช้า', prefShift: 0 },
+            { name: 'น้องฝ้าย', role: 'แคชเชียร์หลัก POS 1', prefShift: 1 },
+            { name: 'น้องเจมส์', role: 'All Café & อุ่นอาหาร', prefShift: 1 },
+            { name: 'น้องเบสท์', role: '7-Delivery & จัดส่ง', prefShift: 1 },
+            { name: 'น้องกิ๊ฟ', role: 'แคชเชียร์ & เติมสินค้า', prefShift: 1 },
+            { name: 'น้องอาร์ม', role: 'แคชเชียร์ & เติมตู้แช่', prefShift: 1 },
+            { name: 'น้องบาส', role: 'แคชเชียร์กะดึก & รับสินค้า', prefShift: 2 },
+            { name: 'น้องเมย์', role: 'จัดเรียงสินค้า & ป้ายราคากะดึก', prefShift: 2 },
+            { name: 'น้องโอ๊ต', role: 'พนักงานหมุนเวียนทุกจุดบริการ', prefShift: 0 },
+            { name: 'น้องปาล์ม', role: 'พนักงานหมุนเวียนบ่าย-ดึก', prefShift: 1 }
+        ];
+
+        function showToast(msg) {
+            const banner = document.getElementById('toast-banner');
+            const msgEl = document.getElementById('toast-message');
+            if (!banner || !msgEl) return;
+            msgEl.textContent = msg;
+            banner.classList.remove('translate-y-24', 'opacity-0');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                banner.classList.add('translate-y-24', 'opacity-0');
+            }, 3200);
+        }
+
+        function getDayCustomers(dayIdx) {
+            const baseDaily = Math.max(50, Number(state.totalCustomers) || 1042);
+            const weeklyTotal = baseDaily * 7;
+            const sumDayPcts = state.dayPcts.reduce((a, b) => a + (Number(b) || 0), 0);
+            const pct = Number(state.dayPcts[dayIdx]) || 0;
+            if (sumDayPcts <= 0) return Math.round(baseDaily);
+            return Math.round(weeklyTotal * (pct / sumDayPcts));
+        }
+
+        // =========================================================================
+        // 2. QUEUING (M/M/S) & MULTI-ROLE WORKFORCE CALCULATION ENGINE
+        // =========================================================================
+        function computeMMSQueue(custInShift, netHours, activeLanes, serviceTimeMin, peakMultiplier) {
+            const safeHours = Math.max(1, netHours);
+            const lanes = Math.max(1, Math.min(6, activeLanes));
+            const muPerLane = 60 / Math.max(0.2, serviceTimeMin); // customers/hr per POS
+            const avgHourly = custInShift / safeHours;
+            const lambdaPeak = avgHourly * peakMultiplier;
+            const totalCap = lanes * muPerLane;
+            const rho = lambdaPeak / Math.max(1, totalCap);
+
+            let queuePerLane = 0;
+            let waitMinutes = 0;
+            if (rho < 0.96) {
+                const lqTotal = (Math.pow(rho, 2) / Math.max(0.05, 1 - rho)) * 0.72;
+                queuePerLane = lqTotal / lanes;
+                waitMinutes = (lqTotal / Math.max(1, lambdaPeak)) * 60;
+            } else {
+                queuePerLane = 4.5 + (rho - 0.96) * 18;
+                waitMinutes = queuePerLane * Math.max(0.5, serviceTimeMin);
+            }
+            return { lambdaPeak, rho, queuePerLane, waitMinutes };
+        }
+
+        function calculateMetrics() {
+            const totalCust = getDayCustomers(state.selectedDayIdx);
+            const shiftHours = Math.max(1, Number(state.shiftHours) || 8);
+            const serviceTimeMin = Math.max(0.2, Number(state.serviceTimeMin) || 1.0);
+            const nonPosFrac = Math.min(0.85, Math.max(0, (Number(state.nonPosPct) || 30) / 100));
+            const bufferFrac = Math.max(0, (Number(state.bufferPct) || 20) / 100);
+            const maxPos = Math.max(1, Math.min(6, Number(state.posCount) || 3));
+            const cafeFrac = Math.min(0.8, Math.max(0, (Number(state.cafePct) || 25) / 100));
+
+            const baseDaily = Math.max(50, Number(state.totalCustomers) || 1042);
+            const dayScale = totalCust / baseDaily;
+            const totalDeliveryToday = Math.round((Number(state.deliveryOrders) || 0) * dayScale);
+
+            const netPosMinutesPerStaff = shiftHours * 60 * (1 - nonPosFrac);
+            const idealMaxCustPerStaff = Math.max(30, Math.round((netPosMinutesPerStaff / serviceTimeMin) * 0.85));
+
+            const shiftMeta = [
+                { name: 'กะที่ 1 เช้า (06:00 - 15:00 น.)', peakNote: 'ช่วงพีค 07:00-08:00 น.', peakMult: 1.85, delivShare: 0.48 },
+                { name: 'กะที่ 2 บ่าย (14:00 - 23:00 น.)', peakNote: 'ช่วงพีค 15:00-16:00 และ 19:00-20:00 น.', peakMult: 1.95, delivShare: 0.52 },
+                { name: 'กะที่ 3 ดึก (22:00 - 07:00 น.)', peakNote: 'รับสินค้าลงสต็อก & จัดป้ายราคา (ไม่มี 7-Delivery)', peakMult: 1.35, delivShare: 0 }
+            ];
+
+            const sumShiftPcts = state.shiftPcts.reduce((a, b) => a + (Number(b) || 0), 0) || 100;
+
+            const shifts = shiftMeta.map((meta, idx) => {
+                const pct = Number(state.shiftPcts[idx]) || 0;
+                const cust = Math.round(totalCust * (pct / sumShiftPcts));
+                const staff = Math.max(1, Number(state.shiftStaff[idx]) || 1);
+                const delivOrders = Math.round(totalDeliveryToday * meta.delivShare);
+
+                // Multi-role breakdown: POS + AllCafe/HotFood + 7-Delivery + Stock/Backroom
+                const posNeeded = Math.max(1, Math.min(maxPos, Math.ceil(cust / idealMaxCustPerStaff)));
+                const cafeItems = Math.round(cust * cafeFrac);
+                const cafeNeeded = idx === 2 ? (cafeItems >= 45 ? 1 : 0) : (cafeItems >= 35 ? Math.min(2, Math.ceil(cafeItems / 130)) : 0);
+                const delivNeeded = idx === 2 ? 0 : (delivOrders >= 12 ? Math.min(3, Math.ceil(delivOrders / 38)) : 0);
+                const stockNeeded = idx === 2 ? 1 : (cust >= 320 ? 1 : 0);
+
+                const recStaff = Math.max(2, posNeeded + cafeNeeded + delivNeeded + stockNeeded);
+                const recWithBuffer = Math.ceil(recStaff * (1 + bufferFrac));
+                const custPerStaff = cust / staff;
+
+                const openPos = Math.max(1, Math.min(maxPos, staff));
+                const qMetrics = computeMMSQueue(cust, shiftHours, openPos, serviceTimeMin, meta.peakMult);
+
+                let status = 'optimal';
+                if (staff < recStaff - 1 || qMetrics.queuePerLane > 4.2 || custPerStaff > idealMaxCustPerStaff * 1.15) {
+                    status = 'overloaded';
+                } else if (staff < recStaff || qMetrics.queuePerLane > 3.0 || custPerStaff > idealMaxCustPerStaff * 0.95) {
+                    status = 'busy';
+                }
+
+                return {
+                    name: meta.name,
+                    peakNote: meta.peakNote,
+                    pct,
+                    cust,
+                    staff,
+                    delivOrders,
+                    recStaff,
+                    recWithBuffer,
+                    custPerStaff,
+                    qMetrics,
+                    status,
+                    roleBreakdown: {
+                        pos: posNeeded,
+                        cafe: cafeNeeded,
+                        deliv: delivNeeded,
+                        stock: stockNeeded
+                    }
+                };
+            });
+
+            const allocatedStaffTotal = shifts.reduce((s, x) => s + x.staff, 0);
+            const recommendedDailyTotal = shifts.reduce((s, x) => s + x.recStaff, 0);
+            const totalPayrollNeeded = Math.ceil(recommendedDailyTotal * (1 + bufferFrac));
+            const avgCustPerStaff = totalCust / Math.max(1, allocatedStaffTotal);
+
+            return {
+                totalCust,
+                totalDeliveryToday,
+                shifts,
+                allocatedStaffTotal,
+                recommendedDailyTotal,
+                totalPayrollNeeded,
+                avgCustPerStaff,
+                idealMaxCustPerStaff
+            };
+        }
+
+        function calculateFestivalMetrics() {
+            const totalCust = Math.max(100, Number(state.festCustomers) || 1960);
+            const shiftHours = Math.max(1, Number(state.festShiftHours) || 11);
+            const serviceTimeMin = Math.max(0.2, Number(state.serviceTimeMin) || 1.0);
+            const nonPosFrac = Math.min(0.85, Math.max(0, (Number(state.nonPosPct) || 30) / 100));
+            const maxPos = Math.max(1, Math.min(6, Number(state.posCount) || 3));
+            const cafeFrac = Math.min(0.8, Math.max(0, (Number(state.cafePct) || 25) / 100));
+
+            const baseDaily = Math.max(50, Number(state.totalCustomers) || 1042);
+            const festScale = totalCust / baseDaily;
+            const totalDeliveryFest = Math.round((Number(state.deliveryOrders) || 0) * Math.min(1.5, festScale));
+
+            const netPosMinutesPerStaff = shiftHours * 60 * (1 - nonPosFrac);
+            const idealMaxCustPerStaff = Math.max(40, Math.round((netPosMinutesPerStaff / serviceTimeMin) * 0.85));
+
+            const festMeta = [
+                { name: 'กะที่ 1 เทศกาล (กลางวัน 06:00 - 18:00 | 12 ชม.)', peakMult: 1.75, delivShare: 1.0 },
+                { name: 'กะที่ 3 เทศกาล (กลางคืน 18:00 - 06:00 | 12 ชม.)', peakMult: 1.65, delivShare: 0 }
+            ];
+
+            const sumFestPcts = state.festShiftPcts.reduce((a, b) => a + (Number(b) || 0), 0) || 100;
+
+            const shifts = festMeta.map((meta, idx) => {
+                const pct = Number(state.festShiftPcts[idx]) || 50;
+                const cust = Math.round(totalCust * (pct / sumFestPcts));
+                const staff = Math.max(1, Number(state.festShiftStaff[idx]) || 1);
+                const delivOrders = Math.round(totalDeliveryFest * meta.delivShare);
+
+                const posNeeded = Math.max(2, Math.min(maxPos, Math.ceil(cust / idealMaxCustPerStaff)));
+                const cafeItems = Math.round(cust * cafeFrac);
+                const cafeNeeded = cafeItems >= 50 ? Math.min(3, Math.ceil(cafeItems / 160)) : 1;
+                const delivNeeded = delivOrders >= 15 ? Math.min(3, Math.ceil(delivOrders / 45)) : 0;
+                const stockNeeded = cust >= 600 ? 2 : 1;
+
+                const recStaff = Math.max(3, posNeeded + cafeNeeded + delivNeeded + stockNeeded);
+                const custPerStaff = cust / staff;
+
+                const openPos = Math.max(1, Math.min(maxPos, staff));
+                const qMetrics = computeMMSQueue(cust, shiftHours, openPos, serviceTimeMin, meta.peakMult);
+
+                let status = 'optimal';
+                if (staff < recStaff - 1 || qMetrics.queuePerLane > 4.5 || custPerStaff > idealMaxCustPerStaff * 1.15) {
+                    status = 'overloaded';
+                } else if (staff < recStaff || qMetrics.queuePerLane > 3.2 || custPerStaff > idealMaxCustPerStaff * 0.95) {
+                    status = 'busy';
+                }
+
+                return {
+                    name: meta.name,
+                    pct,
+                    cust,
+                    staff,
+                    delivOrders,
+                    recStaff,
+                    custPerStaff,
+                    qMetrics,
+                    status,
+                    roleBreakdown: {
+                        pos: posNeeded,
+                        cafe: cafeNeeded,
+                        deliv: delivNeeded,
+                        stock: stockNeeded
+                    }
+                };
+            });
+
+            const allocatedStaffTotal = shifts.reduce((s, x) => s + x.staff, 0);
+            const recommendedDailyTotal = shifts.reduce((s, x) => s + x.recStaff, 0);
+            const avgCustPerStaff = totalCust / Math.max(1, allocatedStaffTotal);
+
+            return {
+                totalCust,
+                shifts,
+                allocatedStaffTotal,
+                recommendedDailyTotal,
+                avgCustPerStaff,
+                idealMaxCustPerStaff
+            };
+        }
+
+        // =========================================================================
+        // 2B. GOOGLE SHEETS & APPS SCRIPT LIVE SYNC ENGINE
+        // =========================================================================
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    inQuotes = !inQuotes;
+                } else if (ch === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += ch;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function applyNormalizedRecords(records) {
+            let updatedBranches = 0;
+            let latestDate = '';
+            const dayNameToIdx = {
+                'จันทร์': 0, 'วันจันทร์': 0,
+                'อังคาร': 1, 'วันอังคาร': 1,
+                'พุธ': 2, 'วันพุธ': 2,
+                'พฤหัส': 3, 'พฤหัสบดี': 3, 'วันพฤหัสบดี': 3,
+                'ศุกร์': 4, 'วันศุกร์': 4,
+                'เสาร์': 5, 'วันเสาร์': 5,
+                'อาทิตย์': 6, 'วันอาทิตย์': 6
+            };
+
+            records.forEach(row => {
+                const code = String(row.Branch_Code || row.branch_code || '').trim();
+                if (!code || !BRANCH_DATA[code]) return;
+
+                const b = BRANCH_DATA[code];
+                const dayType = String(row.Day_Type || 'ปกติ').trim();
+                const dateStr = String(row.Date || '').trim();
+                if (dateStr && dateStr > latestDate) latestDate = dateStr;
+
+                const s1 = Number(row.Cust_S1) || 0;
+                const s2 = Number(row.Cust_S2) || 0;
+                const s3 = Number(row.Cust_S3) || 0;
+                const totalCust = Number(row.Total_Cust) || (s1 + s2 + s3);
+
+                if (dayType.includes('เทศกาล')) {
+                    if (totalCust > 0) b.festCustomers = totalCust;
+                } else {
+                    if (totalCust > 0) b.avgCustomers = totalCust;
+                    if (s1 + s2 + s3 > 0) {
+                        const sumS = s1 + s2 + s3;
+                        const p1 = Math.round((s1 / sumS) * 100);
+                        const p2 = Math.round((s2 / sumS) * 100);
+                        const p3 = Math.max(0, 100 - p1 - p2);
+                        b.shiftPcts = [p1, p2, p3];
+                    }
+                    const deliv = Number(row.Delivery_Orders);
+                    if (!isNaN(deliv) && deliv >= 0) b.deliveryOrders = deliv;
+
+                    const cafePct = Number(row.Cafe_Pct);
+                    if (!isNaN(cafePct) && cafePct > 0) b.cafePct = cafePct;
+
+                    const maxHc = Number(row.Max_Headcount);
+                    if (!isNaN(maxHc) && maxHc >= 6) b.totalHeadcount = maxHc;
+
+                    const actWork = Number(row.Actual_Working);
+                    if (!isNaN(actWork) && actWork >= 3) b.activeDailyStaff = actWork;
+
+                    const dName = String(row.Day_Name || '').trim();
+                    if (dayNameToIdx[dName] !== undefined && code === state.selectedBranchCode) {
+                        state.selectedDayIdx = dayNameToIdx[dName];
+                    }
+                }
+                updatedBranches++;
+            });
+
+            return { updatedBranches, latestDate };
+        }
+
+        async function syncFromGoogleSheets(silent = false) {
+            const urlInput = document.getElementById('input-gsheet-url');
+            const syncIcon = document.getElementById('sync-icon');
+            const statusEl = document.getElementById('gsheet-sync-status');
+            const url = (urlInput ? urlInput.value.trim() : state.gsheetUrl) || state.gsheetUrl;
+            if (!url) return;
+
+            state.gsheetUrl = url;
+            if (syncIcon) syncIcon.className = 'fa-solid fa-spinner fa-spin';
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const rawText = await res.text();
+
+                let records = [];
+                let sourceLabel = 'Google Sheets CSV';
+                const trimmed = rawText.trim();
+
+                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                    sourceLabel = 'Apps Script API';
+                    const parsed = JSON.parse(trimmed);
+                    records = Array.isArray(parsed) ? parsed : (parsed.data || []);
+                } else {
+                    const lines = trimmed.split(/\r?\n/).filter(l => l.trim().length > 0);
+                    if (lines.length < 2) throw new Error('ไม่พบแถวข้อมูลใน Sheet');
+                    const headers = parseCSVLine(lines[0]);
+                    for (let i = 1; i < lines.length; i++) {
+                        const cols = parseCSVLine(lines[i]);
+                        const obj = {};
+                        headers.forEach((h, idx) => { obj[h] = cols[idx]; });
+                        records.push(obj);
+                    }
+                }
+
+                const { updatedBranches, latestDate } = applyNormalizedRecords(records);
+                selectBranch(state.selectedBranchCode, false);
+
+                const nowStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                if (statusEl) {
+                    statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>ซิงก์ผ่าน ${sourceLabel} สำเร็จ (${updatedBranches} รายการ${latestDate ? ` • วันที่ ${latestDate}` : ''}) เมื่อ ${nowStr} น.`;
+                }
+                if (!silent) {
+                    showToast(`ดึงข้อมูลล่าสุดผ่าน ${sourceLabel} (${updatedBranches} รายการ) เรียบร้อยแล้ว!`);
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i>ไม่สามารถดึงข้อมูลจากลิงก์ได้ (${err.message}) — ตรวจสอบสิทธิ์การเข้าถึงเป็น "ทุกคน (Anyone)"`;
+                }
+                if (!silent) {
+                    showToast('เชื่อมต่อไม่ได้ กรุณาตั้งค่าสิทธิ์ Deploy Apps Script เป็น "ทุกคน (Anyone)"');
+                }
+            } finally {
+                if (syncIcon) syncIcon.className = 'fa-solid fa-cloud-arrow-down';
+            }
+        }
+
+        // =========================================================================
+        // 3. UI RENDERERS (BRANCH BADGES, KPI CARDS, SHIFT TABLES)
+        // =========================================================================
+        function updateBranchBadges() {
+            const b = BRANCH_DATA[state.selectedBranchCode] || BRANCH_DATA['5258'];
+            const badgeText = `สาขา ${b.label} • พนักงาน ${state.maxHeadcount} คน`;
+
+            const headerBadge = document.getElementById('header-branch-badge');
+            if (headerBadge) {
+                headerBadge.innerHTML = `<i class="fa-solid fa-gas-pump mr-1"></i> ${badgeText}`;
+            }
+
+            ['t1-branch-badge', 't2-branch-badge', 't3-branch-badge'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = badgeText;
+            });
+
+            const festDatesBadge = document.getElementById('t2-fest-dates-badge');
+            if (festDatesBadge) {
+                festDatesBadge.textContent = `ช่วงพีค: ${b.festDates} (พีค ${b.festPeakMax.toLocaleString()} คน)`;
+            }
+
+            const paramHcInput = document.getElementById('input-max-headcount');
+            const rosterHcInput = document.getElementById('input-roster-headcount');
+            if (paramHcInput && document.activeElement !== paramHcInput) {
+                paramHcInput.value = state.maxHeadcount;
+            }
+            if (rosterHcInput && document.activeElement !== rosterHcInput) {
+                rosterHcInput.value = state.maxHeadcount;
+            }
+        }
+
+        function updateInputHelpers() {
+            const baseDaily = Math.max(50, Number(state.totalCustomers) || 1042);
+            const weeklyEl = document.getElementById('weekly-total-customers');
+            const effDayEl = document.getElementById('effective-day-customers');
+            if (weeklyEl) weeklyEl.textContent = `${(baseDaily * 7).toLocaleString()} คน`;
+            if (effDayEl) effDayEl.textContent = `${getDayCustomers(state.selectedDayIdx).toLocaleString()} คน/วัน`;
+
+            const daySum = state.dayPcts.reduce((a, b) => a + (Number(b) || 0), 0);
+            const daySumBadge = document.getElementById('day-pct-sum-badge');
+            const normBtn = document.getElementById('btn-normalize-days');
+            if (daySumBadge) {
+                daySumBadge.textContent = `รวม: ${daySum}%`;
+                daySumBadge.className = daySum === 100
+                    ? 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                    : 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-seven-red dark:bg-red-950 dark:text-red-400';
+            }
+            if (normBtn) {
+                normBtn.classList.toggle('hidden', daySum === 100);
+            }
+
+            document.querySelectorAll('.day-card').forEach(card => {
+                const dIdx = Number(card.dataset.day);
+                const isSelected = dIdx === state.selectedDayIdx;
+                if (isSelected) {
+                    card.className = 'day-card cursor-pointer rounded-lg p-1 border-2 border-seven-orange bg-orange-50 dark:bg-orange-950/40 transition';
+                } else if (dIdx >= 5) {
+                    card.className = 'day-card cursor-pointer rounded-lg p-1 border border-orange-200 dark:border-orange-800/60 bg-orange-50/50 dark:bg-slate-800 transition';
+                } else {
+                    card.className = 'day-card cursor-pointer rounded-lg p-1 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 transition';
+                }
+            });
+
+            const selDayBadge = document.getElementById('selected-day-badge');
+            if (selDayBadge) {
+                selDayBadge.textContent = `${state.dayNames[state.selectedDayIdx]} (${state.dayPcts[state.selectedDayIdx]}% ของสัปดาห์)`;
+            }
+
+            const staffHelper = document.getElementById('staff-sum-helper');
+            if (staffHelper) {
+                const sumS = state.shiftStaff.reduce((a, b) => a + (Number(b) || 0), 0);
+                staffHelper.textContent = `รวม ${sumS} คน (${state.shiftStaff.join('/')})`;
+            }
+
+            const shiftPctSum = state.shiftPcts.reduce((a, b) => a + (Number(b) || 0), 0);
+            const shiftPctBadge = document.getElementById('shift-pct-sum-badge');
+            if (shiftPctBadge) {
+                shiftPctBadge.textContent = `รวม: ${shiftPctSum}%`;
+                shiftPctBadge.className = shiftPctSum === 100
+                    ? 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                    : 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-seven-red dark:bg-red-950 dark:text-red-400';
+            }
+        }
+
+        function renderKPICards(normalMetrics, festMetrics) {
+            const container = document.getElementById('kpi-cards-grid');
+            if (!container) return;
+
+            const isFest = state.simMode === 'festival';
+            const active = isFest ? festMetrics : normalMetrics;
+            const withinBudget = normalMetrics.totalPayrollNeeded <= state.maxHeadcount;
+
+            container.innerHTML = `
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">ลูกค้าเฉลี่ย / พนักงาน 1 คน</span>
+                        <span class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-seven-green dark:text-emerald-400 flex items-center justify-center">
+                            <i class="fa-solid fa-user-check"></i>
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                        ${active.avgCustPerStaff.toFixed(1)} <span class="text-sm font-normal text-slate-500">คน/วัน</span>
+                    </div>
+                    <div class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        เกณฑ์เหมาะสมไม่เกิน <strong class="text-seven-green dark:text-emerald-400">${active.idealMaxCustPerStaff} คน/กะ</strong> (${isFest ? '11 ชม.สุทธิ' : '8 ชม.สุทธิ'})
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            ${isFest ? 'ยอดลูกค้าช่วงเทศกาล/วัน' : `ยอดลูกค้า${state.dayNames[state.selectedDayIdx]}`}
+                        </span>
+                        <span class="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-900/50 text-seven-orange flex items-center justify-center">
+                            <i class="fa-solid fa-users"></i>
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-seven-orange">
+                        ${active.totalCust.toLocaleString()} <span class="text-sm font-normal text-slate-500">คน/วัน</span>
+                    </div>
+                    <div class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        ${isFest
+                            ? `แบ่ง 2 กะ: กลางวัน ${festMetrics.shifts[0].cust.toLocaleString()} / กลางคืน ${festMetrics.shifts[1].cust.toLocaleString()} คน`
+                            : `ฐานเฉลี่ย ${Number(state.totalCustomers).toLocaleString()} คน/วัน (สัปดาห์ละ ${(Number(state.totalCustomers) * 7).toLocaleString()} คน)`}
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">พนักงานปฏิบัติงานจริง / แนะนำ</span>
+                        <span class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                        ${active.allocatedStaffTotal} <span class="text-base font-semibold text-slate-400">/ ${active.recommendedDailyTotal} คน</span>
+                    </div>
+                    <div class="mt-1.5 text-[11px]">
+                        ${active.allocatedStaffTotal >= active.recommendedDailyTotal
+                            ? '<span class="text-emerald-600 dark:text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>เพียงพอต่อการให้บริการ</span>'
+                            : `<span class="text-seven-red font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>ควรเพิ่มอีก ${active.recommendedDailyTotal - active.allocatedStaffTotal} คน/วัน</span>`}
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">เกณฑ์รับพนักงานรวมเผื่อหยุด (+${state.bufferPct}%)</span>
+                        <span class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                            <i class="fa-solid fa-user-plus"></i>
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-extrabold ${withinBudget ? 'text-blue-600 dark:text-blue-400' : 'text-seven-red'}">
+                        ${normalMetrics.totalPayrollNeeded} <span class="text-sm font-normal text-slate-500">/ มีจริง ${state.maxHeadcount} คน</span>
+                    </div>
+                    <div class="mt-1.5 text-[11px]">
+                        ${withinBudget
+                            ? `<span class="text-emerald-600 dark:text-emerald-400 font-semibold"><i class="fa-solid fa-check mr-1"></i>เพียงพอสำหรับหมุนเวียนหยุด 1 วัน/สัปดาห์</span>`
+                            : `<span class="text-seven-red font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>ควรเพิ่มอัตรากำลังอีก ${normalMetrics.totalPayrollNeeded - state.maxHeadcount} คน</span>`}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStatusBadgeHTML(status) {
+            if (status === 'overloaded') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-100 text-seven-red dark:bg-red-950 dark:text-red-400"><i class="fa-solid fa-circle-exclamation"></i> คิวยาว / คนไม่พอ</span>`;
+            }
+            if (status === 'busy') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"><i class="fa-solid fa-clock"></i> ค่อนข้างแน่น</span>`;
+            }
+            return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"><i class="fa-solid fa-circle-check"></i> คล่องตัว / เหมาะสม</span>`;
+        }
+
+        function renderShiftTable(metrics) {
+            const tbody = document.getElementById('shift-table-body');
+            const tfoot = document.getElementById('shift-table-foot');
+            if (!tbody || !tfoot) return;
+
+            tbody.innerHTML = metrics.shifts.map((s, idx) => {
+                const q = s.qMetrics;
+                const rb = s.roleBreakdown;
+                const qColor = q.queuePerLane <= 3.0 ? 'text-emerald-600 dark:text-emerald-400' : (q.queuePerLane <= 4.2 ? 'text-amber-600 dark:text-amber-400' : 'text-seven-red');
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-3">
+                            <div class="font-semibold text-slate-800 dark:text-slate-100">${s.name}</div>
+                            <div class="text-[10px] text-slate-500">${s.peakNote}</div>
+                        </td>
+                        <td class="py-3 px-3 text-center font-bold text-slate-600 dark:text-slate-300">${s.pct}%</td>
+                        <td class="py-3 px-3 text-right">
+                            <div class="font-bold text-slate-800 dark:text-white">${s.cust.toLocaleString()} คน</div>
+                            <div class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">+ 7-Delivery ${s.delivOrders} บิล</div>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" onclick="adjustShiftStaff(${idx}, -1)" class="w-7 h-7 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 font-bold text-slate-700 dark:text-white transition cursor-pointer">-</button>
+                                <span class="w-8 text-center font-extrabold text-base text-seven-green dark:text-emerald-400">${s.staff}</span>
+                                <button type="button" onclick="adjustShiftStaff(${idx}, 1)" class="w-7 h-7 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:hover:bg-emerald-800 font-bold text-seven-green dark:text-emerald-300 transition cursor-pointer">+</button>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-right font-bold ${s.status === 'overloaded' ? 'text-seven-red' : 'text-slate-800 dark:text-white'}">
+                            ${s.custPerStaff.toFixed(1)} คน/คน
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <div class="font-bold ${qColor}">${q.queuePerLane.toFixed(1)} คน/แถว</div>
+                            <div class="text-[10px] text-slate-500">รอ ~${q.waitMinutes.toFixed(1)} นาที (λ=${q.lambdaPeak.toFixed(0)}/ชม.)</div>
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <div class="font-bold text-blue-600 dark:text-blue-400">ยืนกะรวม ${s.recStaff} คน <span class="text-[10px] text-purple-600 dark:text-purple-400">(รับเผื่อหยุด ${s.recWithBuffer})</span></div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                POS ${rb.pos} • AllCafé/อุ่น ${rb.cafe} • Delivery ${rb.deliv} • เติมของ ${rb.stock}
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-center">${getStatusBadgeHTML(s.status)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="py-3 px-3 text-slate-900 dark:text-white">รวมทั้งวัน (${state.dayNames[state.selectedDayIdx]})</td>
+                    <td class="py-3 px-3 text-center">${state.shiftPcts.reduce((a, b) => a + (Number(b) || 0), 0)}%</td>
+                    <td class="py-3 px-3 text-right">
+                        <div class="text-seven-green dark:text-emerald-400">${metrics.totalCust.toLocaleString()} คน</div>
+                        <div class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">7-Delivery รวม ${metrics.totalDeliveryToday} บิล/วัน</div>
+                    </td>
+                    <td class="py-3 px-3 text-center text-base text-slate-900 dark:text-white">${metrics.allocatedStaffTotal} คน</td>
+                    <td class="py-3 px-3 text-right">${metrics.avgCustPerStaff.toFixed(1)} คน/คน</td>
+                    <td class="py-3 px-3 text-center text-xs text-slate-500">เกณฑ์คล่องตัว ≤ 3 คน/แถว</td>
+                    <td class="py-3 px-3 text-center">
+                        <div class="text-blue-600 dark:text-blue-400">ยืนกะรวม ${metrics.recommendedDailyTotal} คน/วัน</div>
+                        <div class="text-[11px] text-purple-600 dark:text-purple-400">รับเผื่อหยุด (+${state.bufferPct}%): ${metrics.totalPayrollNeeded} คน</div>
+                    </td>
+                    <td class="py-3 px-3 text-center text-xs text-slate-500">มีจริงในสาขา ${state.maxHeadcount} คน</td>
+                </tr>
+            `;
+        }
+
+        function renderFestivalTable(festMetrics) {
+            const tbody = document.getElementById('fest-shift-table-body');
+            const tfoot = document.getElementById('fest-shift-table-foot');
+            if (!tbody || !tfoot) return;
+
+            tbody.innerHTML = festMetrics.shifts.map((s, idx) => {
+                const q = s.qMetrics;
+                const rb = s.roleBreakdown || { pos: 2, cafe: 1, deliv: 0, stock: 1 };
+                const qColor = q.queuePerLane <= 3.2 ? 'text-emerald-600 dark:text-emerald-400' : (q.queuePerLane <= 4.5 ? 'text-amber-600 dark:text-amber-400' : 'text-seven-red');
+                return `
+                    <tr class="hover:bg-orange-50/40 dark:hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-3 font-semibold text-slate-800 dark:text-slate-100">${s.name}</td>
+                        <td class="py-3 px-3 text-center font-bold text-slate-600 dark:text-slate-300">${s.pct}%</td>
+                        <td class="py-3 px-3 text-right">
+                            <div class="font-bold text-seven-red">${s.cust.toLocaleString()} คน</div>
+                            <div class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">+ 7-Delivery ${s.delivOrders} บิล</div>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="flex items-center justify-center gap-2">
+                                <button type="button" onclick="adjustFestShiftStaff(${idx}, -1)" class="w-7 h-7 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 font-bold text-slate-700 dark:text-white transition cursor-pointer">-</button>
+                                <span class="w-8 text-center font-extrabold text-base text-seven-orange">${s.staff}</span>
+                                <button type="button" onclick="adjustFestShiftStaff(${idx}, 1)" class="w-7 h-7 rounded-lg bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/60 dark:hover:bg-orange-800 font-bold text-seven-orange transition cursor-pointer">+</button>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-right font-bold ${s.status === 'overloaded' ? 'text-seven-red' : 'text-slate-800 dark:text-white'}">
+                            ${s.custPerStaff.toFixed(1)} คน/คน <span class="text-[11px] font-normal text-slate-400">(${(s.custPerStaff / 11).toFixed(1)}/ชม.)</span>
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <div class="font-bold ${qColor}">${q.queuePerLane.toFixed(1)} คน/แถว</div>
+                            <div class="text-[10px] text-slate-500">รอ ~${q.waitMinutes.toFixed(1)} นาที</div>
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <div class="font-bold text-blue-600 dark:text-blue-400">ยืนกะรวม ${s.recStaff} คน</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                POS ${rb.pos} • AllCafé/อุ่น ${rb.cafe} • Delivery ${rb.deliv} • เติมของ ${rb.stock}
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-center">${getStatusBadgeHTML(s.status)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="py-3 px-3 text-slate-900 dark:text-white">รวมช่วงเทศกาล (2 กะ / พักก่อน OT 1 ชม. + OT 3 ชม.)</td>
+                    <td class="py-3 px-3 text-center">${state.festShiftPcts.reduce((a, b) => a + (Number(b) || 0), 0)}%</td>
+                    <td class="py-3 px-3 text-right text-seven-red">${festMetrics.totalCust.toLocaleString()} คน</td>
+                    <td class="py-3 px-3 text-center text-base text-seven-orange">${festMetrics.allocatedStaffTotal} คน</td>
+                    <td class="py-3 px-3 text-right">${festMetrics.avgCustPerStaff.toFixed(1)} คน/คน</td>
+                    <td class="py-3 px-3 text-center text-xs text-slate-500">OT รวม ${(festMetrics.allocatedStaffTotal * 3)} ชม./วัน</td>
+                    <td class="py-3 px-3 text-center">
+                        <div class="text-blue-600 dark:text-blue-400">ยืนกะแนะนำรวม ${festMetrics.recommendedDailyTotal} คน/วัน</div>
+                        <div class="text-[10px] text-slate-500 font-normal">(รวม POS + All Café + Delivery + เติมของชั่วคราว)</div>
+                    </td>
+                    <td class="py-3 px-3 text-center text-xs text-slate-500">OT 3 ชม./คน/กะ</td>
+                </tr>
+            `;
+        }
+
+        // =========================================================================
+        // 4. SMART 7-DAY STAFF ROSTER & ROTATING DAY-OFF GENERATOR
+        // =========================================================================
+        function generateSmartRoster(normalMetrics, notify = true) {
+            const rosterSize = Math.max(6, Number(state.maxHeadcount) || 17);
+            const isFest = state.simMode === 'festival';
+
+            const employees = [];
+            for (let i = 0; i < rosterSize; i++) {
+                const template = STAFF_POOL[i % STAFF_POOL.length];
+                const suffix = i >= STAFF_POOL.length ? ` #${i + 1}` : '';
+                employees.push({
+                    id: i,
+                    name: template.name + suffix,
+                    role: template.role,
+                    prefShift: template.prefShift,
+                    isMgr: Boolean(template.isMgr),
+                    isAsst: Boolean(template.isAsst),
+                    schedule: new Array(7).fill(0),
+                    workDaysCount: isFest ? 7 : 6
+                });
+            }
+
+            const supervisors = employees.filter(e => e.isMgr || e.isAsst);
+            const regularStaff = employees.filter(e => !e.isMgr && !e.isAsst);
+
+            // FESTIVAL MODE: 2 Shifts of 12 Hours (0 = Day 12h, 2 = Night 12h), Full Mobilization
+            if (isFest) {
+                const targetBaseSum = Math.max(1, state.festShiftStaff.reduce((a, b) => a + (Number(b) || 0), 0));
+                const dayShare = (Number(state.festShiftStaff[0]) || 9) / targetBaseSum;
+
+                for (let dIdx = 0; dIdx < 7; dIdx++) {
+                    const targetDay = Math.max(2, Math.round(rosterSize * dayShare));
+                    const counts = [0, 0, 0];
+                    const assignedIds = new Set();
+
+                    const mgr = supervisors.find(s => s.isMgr);
+                    if (mgr) {
+                        mgr.schedule[dIdx] = 0;
+                        counts[0]++;
+                        assignedIds.add(mgr.id);
+                    }
+
+                    const nightAsst = supervisors.find(s => !assignedIds.has(s.id) && s.isAsst && s.prefShift === 2)
+                        || supervisors.find(s => !assignedIds.has(s.id) && s.isAsst);
+                    if (nightAsst) {
+                        nightAsst.schedule[dIdx] = 2;
+                        counts[2]++;
+                        assignedIds.add(nightAsst.id);
+                    }
+
+                    supervisors.filter(s => !assignedIds.has(s.id)).forEach(sup => {
+                        const sh = counts[0] < targetDay ? 0 : 2;
+                        sup.schedule[dIdx] = sh;
+                        counts[sh]++;
+                        assignedIds.add(sup.id);
+                    });
+
+                    regularStaff.forEach(emp => {
+                        const preferDay = emp.prefShift !== 2;
+                        if (preferDay && counts[0] < targetDay) {
+                            emp.schedule[dIdx] = 0;
+                            counts[0]++;
+                        } else if (!preferDay && counts[2] < (rosterSize - targetDay)) {
+                            emp.schedule[dIdx] = 2;
+                            counts[2]++;
+                        } else if (counts[0] < targetDay) {
+                            emp.schedule[dIdx] = 0;
+                            counts[0]++;
+                        } else {
+                            emp.schedule[dIdx] = 2;
+                            counts[2]++;
+                        }
+                    });
+                }
+
+                employees.forEach(emp => {
+                    emp.workDaysCount = emp.schedule.filter(v => v !== 'OFF').length;
+                });
+
+                rosterPlan = employees;
+                renderRosterTable(normalMetrics);
+                if (notify) {
+                    showToast(`จัดตารางเวรเทศกาล 2 กะ (กะละ 12 ชม.) ระดมพนักงานครบ ${rosterSize} คน เรียบร้อยแล้ว`);
+                }
+                return;
+            }
+
+            // NORMAL MODE: Strictly 1 OFF Day per employee (6 work days / 1 OFF day)
+        // Assign OFF days so relief supervisor takes OFF the day right after covering Night Shift!
+        const mgr = supervisors.find(s => s.isMgr);
+        const nightAsst = supervisors.find(s => s.isAsst && s.prefShift === 2);
+        const reliefAsst = supervisors.find(s => s.isAsst && s.prefShift === 0);
+        const aftAsst = supervisors.find(s => s.isAsst && s.prefShift === 1);
+
+        if (mgr) {
+            const mgrOffDay = (window._mgrOffToggle = !window._mgrOffToggle) ? 6 : 5;
+            mgr.schedule[mgrOffDay] = 'OFF';
+        }
+        // Night assistant takes OFF on Wednesday (2); relief assistant covers Night Shift on Wed (2) and takes OFF on Thursday (3)
+        if (nightAsst) nightAsst.schedule[2] = 'OFF';
+        if (reliefAsst) reliefAsst.schedule[3] = 'OFF';
+        if (aftAsst) aftAsst.schedule[1] = 'OFF';
+
+        supervisors.forEach((sup, idx) => {
+            if (!sup.schedule.includes('OFF')) {
+                sup.schedule[idx % 4] = 'OFF';
+            }
+        });
+
+        for (let dIdx = 0; dIdx < 7; dIdx++) {
+            const activeSups = supervisors.filter(s => s.schedule[dIdx] !== 'OFF');
+            const assignedSupIds = new Set();
+            const prevDay = (dIdx + 6) % 7;
+            const workedNightPrev = (s) => dIdx > 0 && s.schedule[prevDay] === 2;
+
+            // 1. Assign ONLY ONE supervisor to Night Shift (2) (never stack 2 assistants on Night Shift)
+            const chosenNightSup = activeSups.find(s => s.isAsst && s.prefShift === 2)
+                || activeSups.find(s => s.isAsst && s.schedule[(dIdx + 1) % 7] === 'OFF')
+                || activeSups.find(s => s.isAsst);
+            if (chosenNightSup) {
+                chosenNightSup.schedule[dIdx] = 2;
+                assignedSupIds.add(chosenNightSup.id);
+            }
+
+            // 2. Assign Morning Shift (0) Manager or Assistant who did NOT work Night Shift yesterday
+            const mornSup = activeSups.find(s => !assignedSupIds.has(s.id) && s.isMgr && !workedNightPrev(s))
+                || activeSups.find(s => !assignedSupIds.has(s.id) && s.isAsst && !workedNightPrev(s))
+                || activeSups.find(s => !assignedSupIds.has(s.id) && !workedNightPrev(s));
+            if (mornSup) {
+                mornSup.schedule[dIdx] = 0;
+                assignedSupIds.add(mornSup.id);
+            }
+
+            // 3. Assign Afternoon Shift (1) Assistant (strictly avoid anyone who worked Night Shift yesterday)
+            const aftSup = activeSups.find(s => !assignedSupIds.has(s.id) && s.isAsst && s.prefShift === 1 && !workedNightPrev(s))
+                || activeSups.find(s => !assignedSupIds.has(s.id) && s.isAsst && !workedNightPrev(s))
+                || activeSups.find(s => !assignedSupIds.has(s.id) && !workedNightPrev(s));
+            if (aftSup) {
+                aftSup.schedule[dIdx] = 1;
+                assignedSupIds.add(aftSup.id);
+            }
+
+            // 4. Remaining active supervisors cover Morning (0) or Afternoon (1) — NEVER stack into Night (2)
+            activeSups.forEach(s => {
+                if (!assignedSupIds.has(s.id)) {
+                    s.schedule[dIdx] = s.isMgr ? 0 : (s.prefShift === 2 ? 1 : s.prefShift);
+                    assignedSupIds.add(s.id);
+                }
+            });
+        }
+
+        // Strictly assign 1 OFF day per regular staff member (6 work days / 1 OFF day)
+            const regCount = regularStaff.length;
+            if (regCount > 0) {
+                const dayOrder = [0, 1, 2, 3, 4, 5, 6].sort((a, b) => (Number(state.dayPcts[a]) || 0) - (Number(state.dayPcts[b]) || 0));
+                regularStaff.forEach((emp, idx) => {
+                    const offDay = dayOrder[idx % 7];
+                    emp.schedule[offDay] = 'OFF';
+                });
+            }
+
+            // Fill remaining shift slots on each working day matching Shift Table targets
+            const targetBaseSum = Math.max(1, state.shiftStaff.reduce((a, b) => a + (Number(b) || 0), 0));
+            const share0 = (Number(state.shiftStaff[0]) || 6) / targetBaseSum;
+            const share1 = (Number(state.shiftStaff[1]) || 6) / targetBaseSum;
+
+            for (let dIdx = 0; dIdx < 7; dIdx++) {
+                const totalActiveToday = employees.filter(e => e.schedule[dIdx] !== 'OFF').length;
+                const targetS1 = Math.max(1, Math.round(totalActiveToday * share0));
+                const targetS2 = Math.max(1, Math.round(totalActiveToday * share1));
+                const targetS3 = Math.max(1, totalActiveToday - targetS1 - targetS2);
+                const targets = [targetS1, targetS2, targetS3];
+
+                const counts = [0, 0, 0];
+                supervisors.forEach(s => {
+                    const sh = s.schedule[dIdx];
+                    if (sh !== 'OFF') counts[sh]++;
+                });
+
+                const activeRegs = regularStaff.filter(e => e.schedule[dIdx] !== 'OFF');
+                const prevDay = (dIdx + 6) % 7;
+                const workedNightPrev = (emp) => dIdx > 0 && emp.schedule[prevDay] === 2;
+                const unassigned = [];
+
+                // Employees who worked Night Shift yesterday stay on Night Shift (never move to Morning or Afternoon)
+                activeRegs.forEach(emp => {
+                    if (workedNightPrev(emp)) {
+                        emp.schedule[dIdx] = 2;
+                        counts[2]++;
+                    } else if (counts[emp.prefShift] < targets[emp.prefShift]) {
+                        emp.schedule[dIdx] = emp.prefShift;
+                        counts[emp.prefShift]++;
+                    } else {
+                        unassigned.push(emp);
+                    }
+                });
+
+                unassigned.forEach(emp => {
+                    let chosen = 0;
+                    if (counts[0] < targets[0]) chosen = 0;
+                    else if (counts[1] < targets[1]) chosen = 1;
+                    else chosen = 2;
+                    emp.schedule[dIdx] = chosen;
+                    counts[chosen]++;
+                });
+            }
+
+            employees.forEach(emp => {
+                emp.workDaysCount = emp.schedule.filter(v => v !== 'OFF').length;
+            });
+
+            rosterPlan = employees;
+            renderRosterTable(normalMetrics);
+            if (notify) {
+                showToast(`จัดตารางเวร ${rosterSize} คน (ทำงาน 6 วัน / หยุด 1 วัน • ไม่ต่อกะเช้า/บ่ายหลังออกกะดึก) เรียบร้อยแล้ว`);
+            }
+        }
+
+        function updateModeTabsUI() {
+            const btnNormal = document.getElementById('btn-mode-normal');
+            const btnFest = document.getElementById('btn-mode-festival');
+            const bar = document.getElementById('active-mode-bar');
+            const barText = document.getElementById('active-mode-bar-text');
+            const barBadge = document.getElementById('active-mode-bar-badge');
+            const shiftViewContainer = document.getElementById('shift-view-tabs');
+            if (!btnNormal || !btnFest || !shiftViewContainer) return;
+
+            if (state.simMode === 'festival') {
+                btnFest.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-seven-red to-seven-orange text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer';
+                btnNormal.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-seven-green transition flex items-center gap-1.5 cursor-pointer';
+                bar.className = 'mb-2.5 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800/60 flex items-center justify-between text-xs';
+                barText.className = 'font-semibold text-seven-red dark:text-orange-300';
+                barText.innerHTML = `<i class="fa-solid fa-fire mr-1"></i> โหมดเทศกาลสงกรานต์/ปีใหม่: ลูกค้า ${Number(state.festCustomers).toLocaleString()} คน/วัน (2 กะ กะละ 12 ชม.)`;
+                barBadge.className = 'px-2 py-0.5 rounded-full bg-seven-red text-white text-[10px] font-bold';
+                barBadge.textContent = 'FESTIVAL 12-HR';
+
+                const tabs = [
+                    { id: 'all', label: 'ภาพรวมทั้งวัน (100%)' },
+                    { id: 0, label: `กะ 1 กลางวัน (${state.festShiftPcts[0]}%)` },
+                    { id: 1, label: `กะ 3 กลางคืน (${state.festShiftPcts[1]}%)` }
+                ];
+                shiftViewContainer.innerHTML = tabs.map(t => {
+                    const active = state.activeShiftView === t.id;
+                    return `<button onclick="setShiftView(${typeof t.id === 'string' ? `'${t.id}'` : t.id})" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${active ? 'bg-seven-orange text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">${t.label}</button>`;
+                }).join('');
+            } else {
+                btnNormal.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-seven-green text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer';
+                btnFest.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-seven-red transition flex items-center gap-1.5 cursor-pointer';
+                bar.className = 'mb-2.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs';
+                barText.className = 'font-semibold text-seven-green dark:text-emerald-300';
+                const dayName = state.dayNames[state.selectedDayIdx];
+                const dayPct = state.dayPcts[state.selectedDayIdx];
+                const effCust = getDayCustomers(state.selectedDayIdx);
+                barText.innerHTML = `<i class="fa-solid fa-circle-info mr-1"></i> โหมดวันปกติ: ${dayName} (${dayPct}% ของสัปดาห์) | ลูกค้า ${effCust.toLocaleString()} คน/วัน (3 กะ กะละ ${state.shiftHours} ชม.)`;
+                barBadge.className = 'px-2 py-0.5 rounded-full bg-seven-green text-white text-[10px] font-bold';
+                barBadge.textContent = 'NORMAL 3-SHIFT';
+
+                const tabs = [
+                    { id: 'all', label: 'ภาพรวมทั้งวัน (100%)' },
+                    { id: 0, label: `กะ 1 เช้า (${state.shiftPcts[0]}%)` },
+                    { id: 1, label: `กะ 2 บ่าย (${state.shiftPcts[1]}%)` },
+                    { id: 2, label: `กะ 3 ดึก (${state.shiftPcts[2]}%)` }
+                ];
+                shiftViewContainer.innerHTML = tabs.map(t => {
+                    const active = state.activeShiftView === t.id;
+                    return `<button onclick="setShiftView(${typeof t.id === 'string' ? `'${t.id}'` : t.id})" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${active ? 'bg-seven-green text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">${t.label}</button>`;
+                }).join('');
+            }
+        }
+
+        function cycleEmployeeShift(empIdx, dayIdx) {
+            if (!rosterPlan[empIdx]) return;
+            const current = rosterPlan[empIdx].schedule[dayIdx];
+            const order = state.simMode === 'festival' ? [0, 2, 'OFF'] : [0, 1, 2, 'OFF'];
+            const idx = order.indexOf(current);
+            const next = idx === -1 ? order[0] : order[(idx + 1) % order.length];
+            rosterPlan[empIdx].schedule[dayIdx] = next;
+            rosterPlan[empIdx].workDaysCount = rosterPlan[empIdx].schedule.filter(v => v !== 'OFF').length;
+            renderRosterTable(calculateMetrics());
+        }
+
+        function renderRosterTable(normalMetrics) {
+            const thead = document.getElementById('roster-table-head');
+            const tbody = document.getElementById('roster-table-body');
+            const tfoot = document.getElementById('roster-table-foot');
+            const infoEl = document.getElementById('roster-headcount-info');
+            const legendEl = document.getElementById('roster-legend-bar');
+            if (!thead || !tbody || !tfoot) return;
+
+            const isFest = state.simMode === 'festival';
+
+            if (legendEl) {
+                legendEl.innerHTML = isFest
+                    ? `
+                        <span class="font-semibold text-seven-red">คำอธิบายกะเทศกาล (12 ชม./กะ):</span>
+                        <span class="px-2 py-0.5 rounded-md font-bold bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300 border border-orange-200 dark:border-orange-700">กะ 1 กลางวัน 12ชม. (06-18)</span>
+                        <span class="px-2 py-0.5 rounded-md font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700">กะ 3 กลางคืน 12ชม. (18-06)</span>
+                        <span class="px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">หยุด (OFF)</span>
+                    `
+                    : `
+                        <span class="font-semibold text-slate-500">คำอธิบายกะวันปกติ (9 ชม. รวมพัก 1 ชม.):</span>
+                        <span class="px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">กะ 1 เช้า (06:00-15:00)</span>
+                        <span class="px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">กะ 2 บ่าย (14:00-23:00)</span>
+                        <span class="px-2 py-0.5 rounded-md font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">กะ 3 ดึก (22:00-07:00)</span>
+                        <span class="px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">หยุด (OFF)</span>
+                    `;
+            }
+
+            if (infoEl) {
+                if (isFest) {
+                    infoEl.innerHTML = `โหมดเทศกาล 2 กะ (12 ชม.): <span class="text-seven-red font-bold">ระดมพล ${rosterPlan.length} คน</span> (เป้ากะ ${state.festShiftStaff.join('/')})`;
+                } else {
+                    const avgWorking = (rosterPlan.length * 6 / 7).toFixed(1);
+                    infoEl.innerHTML = `พนักงานทั้งหมดในสาขา: <span class="text-blue-600 dark:text-blue-400 font-bold">${rosterPlan.length} คน</span> (มาทำงานเฉลี่ย ${avgWorking} คน/วัน • เป้ากะ ${state.shiftStaff.join('/')})`;
+                }
+            }
+
+            thead.innerHTML = `
+                <tr>
+                    <th class="py-3 px-3 font-bold min-w-[175px]">ชื่อพนักงาน / ตำแหน่ง</th>
+                    ${state.dayShortNames.map((dName, dIdx) => {
+                        const pct = Number(state.dayPcts[dIdx]) || 0;
+                        const cust = isFest ? Math.max(100, Number(state.festCustomers) || 1960) : getDayCustomers(dIdx);
+                        const isPeak = isFest || pct >= 16;
+                        return `
+                            <th class="py-2.5 px-2 text-center min-w-[96px] ${isPeak ? 'bg-orange-50/90 dark:bg-orange-950/30' : ''}">
+                                <div class="font-bold ${isPeak ? 'text-seven-orange' : 'text-slate-800 dark:text-white'}">
+                                    วัน${dName} ${isFest ? '(เทศกาล)' : `(${pct}%)`}
+                                </div>
+                                <div class="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                                    ~${cust.toLocaleString()} คน
+                                </div>
+                            </th>
+                        `;
+                    }).join('')}
+                    <th class="py-3 px-2 text-center font-bold">ทำงาน / หยุด</th>
+                </tr>
+            `;
+
+            const shiftPillMap = isFest
+                ? {
+                    0: { text: 'กะ 1 กลางวัน 12ชม.', cls: 'bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-700' },
+                    1: { text: 'กะ 1 กลางวัน 12ชม.', cls: 'bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300 border-orange-200 dark:border-orange-700' },
+                    2: { text: 'กะ 3 กลางคืน 12ชม.', cls: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700' },
+                    'OFF': { text: 'หยุด (OFF)', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border-rose-200 dark:border-rose-800' }
+                }
+                : {
+                    0: { text: 'กะ 1 เช้า', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700' },
+                    1: { text: 'กะ 2 บ่าย', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border-amber-200 dark:border-amber-700' },
+                    2: { text: 'กะ 3 ดึก', cls: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700' },
+                    'OFF': { text: 'หยุด (OFF)', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border-rose-200 dark:border-rose-800' }
+                };
+
+            tbody.innerHTML = rosterPlan.map((emp, empIdx) => {
+                const workDays = emp.schedule.filter(v => v !== 'OFF').length;
+                const offDays = 7 - workDays;
+                const isSup = emp.isMgr || emp.isAsst;
+                const roleBadge = emp.isMgr
+                    ? `<span class="ml-1 px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300 text-[9px] font-bold">ผจก.</span>`
+                    : (emp.isAsst ? `<span class="ml-1 px-1.5 py-0.2 rounded bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300 text-[9px] font-bold">ผู้ช่วยฯ</span>` : '');
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition ${isSup ? 'bg-sky-50/30 dark:bg-sky-950/15' : ''}">
+                        <td class="py-2 px-3">
+                            <div class="font-bold text-slate-800 dark:text-slate-100 flex items-center flex-wrap">${emp.name}${roleBadge}</div>
+                            <div class="text-[10px] text-slate-500">${emp.role}</div>
+                        </td>
+                        ${emp.schedule.map((val, dIdx) => {
+                            const pill = shiftPillMap[val] || shiftPillMap[0];
+                            const isPeakDay = isFest || (Number(state.dayPcts[dIdx]) || 0) >= 16;
+                            return `
+                                <td class="py-2 px-1.5 text-center ${isPeakDay ? 'bg-orange-50/40 dark:bg-orange-950/10' : ''}">
+                                    <button type="button" onclick="cycleEmployeeShift(${empIdx}, ${dIdx})"
+                                        class="w-full py-1 px-1 rounded-lg border text-[10px] sm:text-[11px] font-bold transition transform hover:scale-105 cursor-pointer ${pill.cls}"
+                                        title="คลิกเพื่อเปลี่ยนกะหรือวันหยุดของ ${emp.name} ในวัน${state.dayShortNames[dIdx]}">
+                                        ${pill.text}
+                                    </button>
+                                </td>
+                            `;
+                        }).join('')}
+                        <td class="py-2 px-2 text-center">
+                            <span class="font-bold text-slate-800 dark:text-white">${workDays} วัน</span>
+                            <span class="text-slate-400"> / </span>
+                            <span class="font-bold text-rose-600 dark:text-rose-400">หยุด ${offDays}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Summary row per day + Supervisor Coverage & Manager Weekend-Off & Night-to-Morning/Afternoon Check
+            const missingWarnings = [];
+            if (!isFest) {
+                rosterPlan.forEach(emp => {
+                    emp.schedule.forEach((v, dIdx) => {
+                        if (emp.isMgr && v === 'OFF' && dIdx !== 5 && dIdx !== 6) {
+                            missingWarnings.push(`${emp.name} หยุดวัน${state.dayShortNames[dIdx]} (ผจก. ต้องหยุดเฉพาะ ส หรือ อา)`);
+                        }
+                        if (dIdx > 0 && emp.schedule[dIdx - 1] === 2) {
+                            if (v === 0) {
+                                missingWarnings.push(`${emp.name} เข้ากะดึกวัน${state.dayShortNames[dIdx - 1]} แล้วต่อกะเช้าวัน${state.dayShortNames[dIdx]} (ห้ามเด็ดขาด)`);
+                            } else if (v === 1) {
+                                missingWarnings.push(`${emp.name} ออกกะดึกวัน${state.dayShortNames[dIdx - 1]} แล้วต่อกะบ่ายวัน${state.dayShortNames[dIdx]} (ควรให้หยุด OFF หรือต่อกะดึก)`);
+                            }
+                        }
+                    });
+                });
+            }
+
+            const dailySummaries = [0, 1, 2, 3, 4, 5, 6].map(dIdx => {
+                let s1 = 0, s2 = 0, s3 = 0, off = 0;
+                let hasSupS1 = false, hasAsstS2 = false, asstS3Count = 0;
+
+                rosterPlan.forEach(emp => {
+                    const v = emp.schedule[dIdx];
+                    if (v === 0 || (isFest && v === 1)) {
+                        s1++;
+                        if (emp.isMgr || emp.isAsst) hasSupS1 = true;
+                    } else if (v === 1) {
+                        s2++;
+                        if (emp.isAsst) hasAsstS2 = true;
+                    } else if (v === 2) {
+                        s3++;
+                        if (emp.isAsst) asstS3Count++;
+                    } else {
+                        off++;
+                    }
+                });
+
+                const dShort = state.dayShortNames[dIdx];
+                if (isFest) {
+                    if (!hasSupS1) missingWarnings.push(`วัน${dShort} (กะกลางวัน 12ชม. ขาด ผจก./ผู้ช่วยฯ)`);
+                    if (asstS3Count === 0) missingWarnings.push(`วัน${dShort} (กะกลางคืน 12ชม. ขาดผู้ช่วยฯ)`);
+                } else {
+                    if (!hasSupS1) missingWarnings.push(`วัน${dShort} (กะเช้าขาด ผจก./ผู้ช่วยฯ)`);
+                    if (!hasAsstS2) missingWarnings.push(`วัน${dShort} (กะบ่ายขาดผู้ช่วยฯ)`);
+                    if (asstS3Count === 0) missingWarnings.push(`วัน${dShort} (กะดึกขาดผู้ช่วยฯ)`);
+                    if (asstS3Count > 1) missingWarnings.push(`วัน${dShort} (ผู้ช่วยฯ อยู่ซ้อนกัน ${asstS3Count} คนในผลัดดึก ควรมีเพียง 1 คน)`);
+                }
+
+                return {
+                    working: s1 + s2 + s3,
+                    s1,
+                    s2,
+                    s3,
+                    off,
+                    allCovered: isFest ? (hasSupS1 && asstS3Count >= 1) : (hasSupS1 && hasAsstS2 && asstS3Count === 1)
+                };
+            });
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="py-2.5 px-3 text-slate-800 dark:text-white">สรุปมาทำงาน / หยุดรายวัน</td>
+                    ${dailySummaries.map(sum => `
+                        <td class="py-2 px-1.5 text-center">
+                            <div class="${isFest ? 'text-seven-orange' : 'text-emerald-700 dark:text-emerald-400'} font-extrabold">มา ${sum.working} คน</div>
+                            <div class="text-[10px] text-slate-500 font-normal">
+                                ${isFest ? `(กลางวัน ${sum.s1} / กลางคืน ${sum.s3}) • หยุด ${sum.off}` : `(${sum.s1}/${sum.s2}/${sum.s3}) • หยุด ${sum.off}`}
+                            </div>
+                            <div class="mt-0.5 text-[9px] font-bold ${sum.allCovered ? 'text-sky-600 dark:text-sky-400' : 'text-seven-red'}">
+                                ${sum.allCovered ? '<i class="fa-solid fa-shield-check"></i> ผู้ช่วยครบทุกกะ' : '<i class="fa-solid fa-triangle-exclamation"></i> ขาดผู้ช่วยบางกะ'}
+                            </div>
+                        </td>
+                    `).join('')}
+                    <td class="py-2 px-2 text-center text-[11px] text-slate-500">${isFest ? 'เทศกาล 2 กะ (12 ชม.)' : 'ทำงาน 6 / หยุด 1 วัน'}</td>
+                </tr>
+            `;
+
+            const supAlertEl = document.getElementById('roster-supervisor-alert');
+            if (supAlertEl) {
+                if (missingWarnings.length === 0) {
+                    supAlertEl.innerHTML = isFest
+                        ? `
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-100 text-orange-900 dark:bg-orange-950/70 dark:text-orange-300 text-[11px] font-bold">
+                                <i class="fa-solid fa-fire"></i>
+                                <span>โหมดเทศกาล 2 กะ (กะละ 12 ชม.): จัดพนักงานลงกะกลางวันและกลางคืนครบทั้ง ${rosterPlan.length} คน พร้อม ผจก./ผู้ช่วยฯ ดูแลครบทุกกะตลอด 7 วัน</span>
+                            </div>
+                        `
+                        : `
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 text-[11px] font-bold">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>ผ่านเงื่อนไขครบถ้วน: ทุกคนทำงาน 6 หยุด 1 วัน • ผจก. หยุด ส/อา • ผู้ช่วยฯ ครบทุกผลัด • ไม่มีใครออกกะดึกแล้วต่อกะเช้า/กะบ่าย</span>
+                            </div>
+                        `;
+                } else {
+                    supAlertEl.innerHTML = `
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-100 text-seven-red dark:bg-red-950/70 dark:text-red-300 text-[11px] font-bold">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>แจ้งเตือนเงื่อนไข: ${missingWarnings.join(' • ')}</span>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // =========================================================================
+        // 5. THREE.JS 3D STORE & GAS STATION SIMULATION ENGINE
+        // =========================================================================
+        let scene, camera, renderer;
+        let posGroup, shelvesGroup, staffGroup, customersGroup, carsGroup, statusRingMesh;
+        let isDragging = false, prevMouse = { x: 0, y: 0 };
+        let camSpherical = { radius: 24, theta: 0.65, phi: 0.88 };
+        let camTarget = new THREE.Vector3(0, 1, 0);
+
+        function init3DScene() {
+            const container = document.getElementById('canvas-container');
+            if (!container || typeof THREE === 'undefined') return;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.016);
+
+            const width = container.clientWidth || 600;
+            const height = container.clientHeight || 400;
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 150);
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.innerHTML = '';
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.68);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+            dirLight.position.set(14, 22, 16);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            const warmPoint = new THREE.PointLight(0xffedd5, 0.6, 22);
+            warmPoint.position.set(-4, 4.5, -2);
+            scene.add(warmPoint);
+
+            buildStoreEnvironment();
+
+            posGroup = new THREE.Group();
+            shelvesGroup = new THREE.Group();
+            staffGroup = new THREE.Group();
+            customersGroup = new THREE.Group();
+            carsGroup = new THREE.Group();
+
+            scene.add(posGroup);
+            scene.add(shelvesGroup);
+            scene.add(staffGroup);
+            scene.add(customersGroup);
+            scene.add(carsGroup);
+
+            buildShelves();
+
+            const dom = renderer.domElement;
+            dom.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - prevMouse.x;
+                const dy = e.clientY - prevMouse.y;
+                prevMouse = { x: e.clientX, y: e.clientY };
+                camSpherical.theta -= dx * 0.008;
+                camSpherical.phi = Math.max(0.25, Math.min(1.42, camSpherical.phi - dy * 0.008));
+                updateCameraPosition();
+            });
+
+            dom.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                camSpherical.radius = Math.max(10, Math.min(42, camSpherical.radius + e.deltaY * 0.015));
+                updateCameraPosition();
+            }, { passive: false });
+
+            dom.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            }, { passive: true });
+            dom.addEventListener('touchend', () => { isDragging = false; });
+            dom.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const dx = e.touches[0].clientX - prevMouse.x;
+                const dy = e.touches[0].clientY - prevMouse.y;
+                prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                camSpherical.theta -= dx * 0.01;
+                camSpherical.phi = Math.max(0.25, Math.min(1.42, camSpherical.phi - dy * 0.01));
+                updateCameraPosition();
+            }, { passive: true });
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function updateCameraPosition() {
+            if (!camera) return;
+            camera.position.x = camTarget.x + camSpherical.radius * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+            camera.position.y = camTarget.y + camSpherical.radius * Math.cos(camSpherical.phi);
+            camera.position.z = camTarget.z + camSpherical.radius * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+            camera.lookAt(camTarget);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (!container || !renderer || !camera) return;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        }
+
+        function buildStoreEnvironment() {
+            const groundGeo = new THREE.PlaneGeometry(46, 46);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.02;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const floorGeo = new THREE.BoxGeometry(14, 0.15, 11);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.position.set(0, 0.05, -2.5);
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 });
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(14.2, 3.6, 0.25), wallMat);
+            backWall.position.set(0, 1.8, -8);
+            backWall.receiveShadow = true;
+            scene.add(backWall);
+
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.6, 11), wallMat);
+            leftWall.position.set(-7, 1.8, -2.5);
+            scene.add(leftWall);
+
+            const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.6, 11), wallMat);
+            rightWall.position.set(7, 1.8, -2.5);
+            scene.add(rightWall);
+
+            const canopyGroup = new THREE.Group();
+            canopyGroup.position.set(0, 3.7, 3.1);
+
+            const stripeOrange = new THREE.Mesh(new THREE.BoxGeometry(14.6, 0.28, 0.8), new THREE.MeshStandardMaterial({ color: 0xF37021 }));
+            stripeOrange.position.y = 0.28;
+            canopyGroup.add(stripeOrange);
+
+            const stripeGreen = new THREE.Mesh(new THREE.BoxGeometry(14.6, 0.36, 0.8), new THREE.MeshStandardMaterial({ color: 0x008060 }));
+            stripeGreen.position.y = 0;
+            canopyGroup.add(stripeGreen);
+
+            const stripeRed = new THREE.Mesh(new THREE.BoxGeometry(14.6, 0.22, 0.8), new THREE.MeshStandardMaterial({ color: 0xEE2524 }));
+            stripeRed.position.y = -0.26;
+            canopyGroup.add(stripeRed);
+
+            scene.add(canopyGroup);
+
+            const cafeCounter = new THREE.Mesh(
+                new THREE.BoxGeometry(3.4, 1.05, 1.2),
+                new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 })
+            );
+            cafeCounter.position.set(-4.8, 0.6, -6.8);
+            cafeCounter.castShadow = true;
+            scene.add(cafeCounter);
+
+            const coffeeMachine = new THREE.Mesh(
+                new THREE.BoxGeometry(0.9, 0.7, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.3 })
+            );
+            coffeeMachine.position.set(-5.3, 1.45, -6.8);
+            scene.add(coffeeMachine);
+
+            for (let i = 0; i < 4; i++) {
+                const cooler = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.9, 2.3, 1.6),
+                    new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.25, roughness: 0.2 })
+                );
+                cooler.position.set(6.3, 1.2, -6.5 + i * 1.9);
+                scene.add(cooler);
+            }
+
+            const ringGeo = new THREE.RingGeometry(2.3, 2.65, 36);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+            statusRingMesh = new THREE.Mesh(ringGeo, ringMat);
+            statusRingMesh.rotation.x = -Math.PI / 2;
+            statusRingMesh.position.set(0.5, 0.14, 0.2);
+            scene.add(statusRingMesh);
+
+            const lineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+            for (let i = -2; i <= 2; i++) {
+                const line = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 3.2), lineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(i * 2.8, 0.01, 6.2);
+                scene.add(line);
+            }
+        }
+
+        function buildShelves() {
+            if (!shelvesGroup) return;
+            shelvesGroup.clear();
+            const shelfMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
+            const productColors = [0xef4444, 0xf59e0b, 0x10b981, 0x3b82f6, 0x8b5cf6];
+
+            const aisleX = [-3.6, -1.2, 1.2];
+            aisleX.forEach((xPos, idx) => {
+                const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.65, 3.8), shelfMat);
+                shelf.position.set(xPos, 0.9, -3.5);
+                shelf.castShadow = true;
+                shelf.receiveShadow = true;
+                shelvesGroup.add(shelf);
+
+                const prod = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.75, 0.25, 3.5),
+                    new THREE.MeshStandardMaterial({ color: productColors[idx % productColors.length] })
+                );
+                prod.position.set(xPos, 1.82, -3.5);
+                shelvesGroup.add(prod);
+            });
+        }
+
+        function createPersonMesh(shirtColor, pantsColor, isStaff = false) {
+            const person = new THREE.Group();
+
+            const legGeo = new THREE.CylinderGeometry(0.11, 0.1, 0.65, 10);
+            const legMat = new THREE.MeshStandardMaterial({ color: pantsColor });
+            const leftLeg = new THREE.Mesh(legGeo, legMat);
+            leftLeg.position.set(-0.12, 0.35, 0);
+            person.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(legGeo, legMat);
+            rightLeg.position.set(0.12, 0.35, 0);
+            person.add(rightLeg);
+
+            const bodyGeo = new THREE.CylinderGeometry(0.22, 0.2, 0.72, 12);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: shirtColor });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.98;
+            body.castShadow = true;
+            person.add(body);
+
+            if (isStaff) {
+                const stripe = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.225, 0.225, 0.14, 12),
+                    new THREE.MeshStandardMaterial({ color: 0xF37021 })
+                );
+                stripe.position.y = 1.08;
+                person.add(stripe);
+            }
+
+            const headGeo = new THREE.SphereGeometry(0.19, 14, 14);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xfde68a });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.56;
+            head.castShadow = true;
+            person.add(head);
+
+            return person;
+        }
+
+        function createCarMesh(colorHex) {
+            const car = new THREE.Group();
+            const chassis = new THREE.Mesh(
+                new THREE.BoxGeometry(1.75, 0.65, 3.2),
+                new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.4, roughness: 0.3 })
+            );
+            chassis.position.y = 0.52;
+            chassis.castShadow = true;
+            car.add(chassis);
+
+            const cabin = new THREE.Mesh(
+                new THREE.BoxGeometry(1.45, 0.55, 1.7),
+                new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2 })
+            );
+            cabin.position.set(0, 1.05, -0.1);
+            car.add(cabin);
+
+            return car;
+        }
+
+        function update3DScene(normalMetrics, festMetrics) {
+            if (!scene || !posGroup || !staffGroup || !customersGroup || !carsGroup) return;
+
+            posGroup.clear();
+            staffGroup.clear();
+            customersGroup.clear();
+            carsGroup.clear();
+
+            const countPos = Math.max(1, Math.min(6, Number(state.posCount) || 3));
+            const counterWidth = countPos * 1.65;
+            const counterMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(counterWidth, 1.05, 1.1),
+                new THREE.MeshStandardMaterial({ color: 0x008060, roughness: 0.4 })
+            );
+            counterMesh.position.set(0.5, 0.6, -0.9);
+            counterMesh.castShadow = true;
+            posGroup.add(counterMesh);
+
+            for (let i = 0; i < countPos; i++) {
+                const posX = 0.5 - counterWidth / 2 + 0.82 + i * 1.65;
+                const register = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.45, 0.38, 0.4),
+                    new THREE.MeshStandardMaterial({ color: 0x1e293b })
+                );
+                register.position.set(posX, 1.32, -0.9);
+                posGroup.add(register);
+            }
+
+            const isFest = state.simMode === 'festival';
+            const activeMetrics = isFest ? festMetrics : normalMetrics;
+            let displayStaff = 0;
+            let displayCustomers = 0;
+            let status = 'optimal';
+
+            if (state.activeShiftView === 'all') {
+                displayStaff = activeMetrics.allocatedStaffTotal;
+                displayCustomers = activeMetrics.totalCust;
+                const ratio = activeMetrics.avgCustPerStaff / activeMetrics.idealMaxCustPerStaff;
+                status = ratio > 1.15 ? 'overloaded' : (ratio > 0.92 ? 'busy' : 'optimal');
+            } else {
+                const sObj = activeMetrics.shifts[state.activeShiftView] || activeMetrics.shifts[0];
+                displayStaff = sObj.staff;
+                displayCustomers = sObj.cust;
+                status = sObj.status;
+            }
+
+            const ringDot = document.getElementById('status-ring-dot');
+            const ringText = document.getElementById('status-ring-text');
+            if (statusRingMesh) {
+                if (status === 'overloaded') {
+                    statusRingMesh.material.color.setHex(0xef4444);
+                    if (ringDot) ringDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 inline-block';
+                    if (ringText) ringText.textContent = 'วงแหวนพื้น: คิวยาว / พนักงานไม่พอ';
+                } else if (status === 'busy') {
+                    statusRingMesh.material.color.setHex(0xf59e0b);
+                    if (ringDot) ringDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 inline-block';
+                    if (ringText) ringText.textContent = 'วงแหวนพื้น: ค่อนข้างหนาแน่น';
+                } else {
+                    statusRingMesh.material.color.setHex(0x10b981);
+                    if (ringDot) ringDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block';
+                    if (ringText) ringText.textContent = 'วงแหวนพื้น: คล่องตัว / เหมาะสม';
+                }
+            }
+
+            const visualStaffCount = Math.min(24, Math.max(1, displayStaff));
+            for (let i = 0; i < visualStaffCount; i++) {
+                const staffMesh = createPersonMesh(0x008060, 0x1e293b, true);
+                if (i < countPos) {
+                    const posX = 0.5 - counterWidth / 2 + 0.82 + i * 1.65;
+                    staffMesh.position.set(posX, 0.12, -1.75);
+                } else if (i === countPos) {
+                    staffMesh.position.set(-4.8, 0.12, -5.8);
+                } else {
+                    const idx = i - countPos - 1;
+                    const x = -4.2 + (idx % 5) * 2.1;
+                    const z = -5.0 + Math.floor(idx / 5) * 1.8;
+                    staffMesh.position.set(x, 0.12, z);
+                }
+                staffGroup.add(staffMesh);
+            }
+
+            const visualCustCount = Math.min(48, Math.max(3, Math.round(displayCustomers / 25)));
+            const custShirtPalette = [0x38bdf8, 0xf472b6, 0xa78bfa, 0xfbbf24, 0x34d399, 0xf87171];
+
+            for (let i = 0; i < visualCustCount; i++) {
+                const custMesh = createPersonMesh(custShirtPalette[i % custShirtPalette.length], 0x334155, false);
+                if (i < countPos * 3) {
+                    const lane = i % countPos;
+                    const depth = Math.floor(i / countPos);
+                    const posX = 0.5 - counterWidth / 2 + 0.82 + lane * 1.65;
+                    custMesh.position.set(posX, 0.12, 0.1 + depth * 0.72);
+                } else {
+                    const rem = i - countPos * 3;
+                    const x = -5.2 + (rem % 6) * 2.05;
+                    const z = -5.8 + Math.floor(rem / 6) * 1.35;
+                    custMesh.position.set(x, 0.12, z);
+                }
+                customersGroup.add(custMesh);
+            }
+
+            const carCount = isFest ? 5 : (displayCustomers > 1100 ? 4 : 3);
+            const carColors = [0xe2e8f0, 0x3b82f6, 0xef4444, 0xf59e0b, 0x10b981];
+            const slots = [-5.6, -2.8, 0, 2.8, 5.6];
+            for (let i = 0; i < carCount; i++) {
+                const car = createCarMesh(carColors[i % carColors.length]);
+                car.position.set(slots[i], 0, 6.2);
+                carsGroup.add(car);
+            }
+
+            const renderSummary = document.getElementById('3d-render-summary');
+            if (renderSummary) {
+                renderSummary.textContent = `แสดงโมเดล: พนักงาน ${visualStaffCount} คน • ลูกค้าจำลอง ${visualCustCount} ตัวแทน (${displayCustomers.toLocaleString()} คนจริง)`;
+            }
+        }
+
+        function animateLoop() {
+            requestAnimationFrame(animateLoop);
+            if (statusRingMesh) {
+                statusRingMesh.rotation.z += 0.01;
+            }
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // =========================================================================
+        // 6. INTERACTIVE HANDLERS, BRANCH SWITCHER & REFRESH PIPELINE
+        // =========================================================================
+        function selectBranch(branchCode, notify = true) {
+            const b = BRANCH_DATA[branchCode] || BRANCH_DATA['5258'];
+            state.selectedBranchCode = b.code;
+            state.totalCustomers = b.avgCustomers;
+            state.totalStaff = b.activeDailyStaff;
+            state.maxHeadcount = b.totalHeadcount;
+            state.dayPcts = [...b.dayPcts];
+            state.shiftPcts = [...b.shiftPcts];
+            state.shiftStaff = [...b.shiftStaff];
+            state.deliveryOrders = b.deliveryOrders;
+            state.cafePct = b.cafePct;
+            state.festCustomers = b.festCustomers;
+            state.festShiftStaff = [...b.festShiftStaff];
+
+            const selTop = document.getElementById('select-branch-top');
+            const selParam = document.getElementById('select-branch-param');
+            if (selTop) selTop.value = b.code;
+            if (selParam) selParam.value = b.code;
+
+            document.getElementById('input-total-customers').value = state.totalCustomers;
+            document.getElementById('input-total-staff').value = state.totalStaff;
+            document.getElementById('input-max-headcount').value = state.maxHeadcount;
+            document.getElementById('input-pct-s1').value = state.shiftPcts[0];
+            document.getElementById('input-pct-s2').value = state.shiftPcts[1];
+            document.getElementById('input-pct-s3').value = state.shiftPcts[2];
+            document.getElementById('input-cafe-pct').value = state.cafePct;
+            document.getElementById('input-delivery-orders').value = state.deliveryOrders;
+            document.getElementById('input-fest-customers').value = state.festCustomers;
+
+            state.dayPcts.forEach((p, idx) => {
+                const el = document.getElementById(`input-day-pct-${idx}`);
+                if (el) el.value = p;
+            });
+
+            generateSmartRoster(calculateMetrics(), false);
+            refreshAll();
+            if (notify) {
+                showToast(`โหลดข้อมูลจริง สาขา ${b.label} (พนักงาน ${b.totalHeadcount} คน • พีคสงกรานต์ ${b.festDates}) แล้ว`);
+            }
+        }
+
+        window.adjustShiftStaff = function(shiftIdx, delta) {
+            const current = Number(state.shiftStaff[shiftIdx]) || 1;
+            state.shiftStaff[shiftIdx] = Math.max(1, current + delta);
+            state.totalStaff = state.shiftStaff.reduce((a, b) => a + b, 0);
+            const totalStaffInput = document.getElementById('input-total-staff');
+            if (totalStaffInput) totalStaffInput.value = state.totalStaff;
+            generateSmartRoster(calculateMetrics(), false);
+            refreshAll();
+        };
+
+        window.adjustFestShiftStaff = function(shiftIdx, delta) {
+            const current = Number(state.festShiftStaff[shiftIdx]) || 1;
+            state.festShiftStaff[shiftIdx] = Math.max(1, current + delta);
+            generateSmartRoster(calculateMetrics(), false);
+            refreshAll();
+        };
+
+        window.setShiftView = function(viewId) {
+            state.activeShiftView = viewId;
+            refreshAll();
+        };
+
+        function autoBalanceNormalShifts(notify = true) {
+            const metrics = calculateMetrics();
+            state.shiftStaff = metrics.shifts.map(s => s.recStaff);
+            state.totalStaff = state.shiftStaff.reduce((a, b) => a + b, 0);
+            state.simMode = 'normal';
+            const totalStaffInput = document.getElementById('input-total-staff');
+            if (totalStaffInput) totalStaffInput.value = state.totalStaff;
+            generateSmartRoster(metrics, false);
+            refreshAll();
+            if (notify) {
+                showToast(`จัดพนักงาน 3 กะอัตโนมัติรวม ${state.totalStaff} คน/วัน ให้สมดุลกับภาระงานแล้ว`);
+            }
+        }
+
+        function autoBalanceFestivalShifts(notify = true) {
+            const festMetrics = calculateFestivalMetrics();
+            state.festShiftStaff = festMetrics.shifts.map(s => s.recStaff);
+            state.simMode = 'festival';
+            generateSmartRoster(calculateMetrics(), false);
+            refreshAll();
+            if (notify) {
+                const sum = state.festShiftStaff.reduce((a, b) => a + b, 0);
+                showToast(`จัดตารางเทศกาล 2 กะ (12 ชม.) รวม ${sum} คน/วัน และอัปเดตตารางเวรรายบุคคลเรียบร้อยแล้ว`);
+            }
+        }
+
+        function refreshAll() {
+            const normalMetrics = calculateMetrics();
+            const festMetrics = calculateFestivalMetrics();
+
+            updateBranchBadges();
+            updateInputHelpers();
+            updateModeTabsUI();
+            renderKPICards(normalMetrics, festMetrics);
+            renderShiftTable(normalMetrics);
+            renderFestivalTable(festMetrics);
+            update3DScene(normalMetrics, festMetrics);
+        }
+
+        function bindEvents() {
+            document.getElementById('select-branch-top')?.addEventListener('change', (e) => {
+                selectBranch(e.target.value, true);
+            });
+            document.getElementById('select-branch-param')?.addEventListener('change', (e) => {
+                selectBranch(e.target.value, true);
+            });
+
+            document.getElementById('btn-cam-overview')?.addEventListener('click', () => {
+                camTarget.set(0, 1, 0);
+                camSpherical = { radius: 24, theta: 0.65, phi: 0.88 };
+                updateCameraPosition();
+            });
+            document.getElementById('btn-cam-pos')?.addEventListener('click', () => {
+                camTarget.set(0.5, 1.2, -0.5);
+                camSpherical = { radius: 11, theta: 0.25, phi: 1.05 };
+                updateCameraPosition();
+            });
+            document.getElementById('btn-cam-parking')?.addEventListener('click', () => {
+                camTarget.set(0, 0.8, 5.5);
+                camSpherical = { radius: 15, theta: -0.45, phi: 1.0 };
+                updateCameraPosition();
+            });
+
+            const btnTheme = document.getElementById('btn-theme-toggle');
+            if (btnTheme) {
+                btnTheme.addEventListener('click', () => {
+                    state.isDark = !state.isDark;
+                    document.documentElement.classList.toggle('dark', state.isDark);
+                    const icon = document.getElementById('theme-icon');
+                    if (icon) icon.className = state.isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+                    if (scene) {
+                        scene.background = new THREE.Color(state.isDark ? 0x090d16 : 0x0f172a);
+                    }
+                });
+            }
+
+            const btnReset = document.getElementById('btn-reset-defaults');
+            if (btnReset) {
+                btnReset.addEventListener('click', () => {
+                    const keepDark = state.isDark;
+                    const keepBranch = state.selectedBranchCode;
+                    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                    state.isDark = keepDark;
+                    document.getElementById('input-service-time').value = state.serviceTimeMin;
+                    document.getElementById('input-non-pos').value = state.nonPosPct;
+                    document.getElementById('input-buffer').value = state.bufferPct;
+                    document.getElementById('input-pos-count').value = state.posCount;
+                    selectBranch(keepBranch, false);
+                    showToast('รีเซ็ตค่าเริ่มต้นของสาขาเรียบร้อยแล้ว');
+                });
+            }
+
+            document.getElementById('btn-mode-normal')?.addEventListener('click', () => {
+                state.simMode = 'normal';
+                state.activeShiftView = 0;
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+            });
+            document.getElementById('btn-mode-festival')?.addEventListener('click', () => {
+                state.simMode = 'festival';
+                state.activeShiftView = 0;
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+            });
+
+            document.getElementById('input-total-customers')?.addEventListener('input', (e) => {
+                state.totalCustomers = Math.max(50, Number(e.target.value) || 50);
+                refreshAll();
+            });
+
+            document.getElementById('input-total-staff')?.addEventListener('input', (e) => {
+                const newTotal = Math.max(3, Number(e.target.value) || 3);
+                state.totalStaff = newTotal;
+                const s1 = Math.max(1, Math.round(newTotal * (state.shiftPcts[0] / 100)));
+                const s2 = Math.max(1, Math.round(newTotal * (state.shiftPcts[1] / 100)));
+                const s3 = Math.max(1, newTotal - s1 - s2);
+                state.shiftStaff = [s1, s2, s3];
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+            });
+
+            document.getElementById('input-max-headcount')?.addEventListener('input', (e) => {
+                state.maxHeadcount = Math.max(6, Math.min(50, Number(e.target.value) || 6));
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+            });
+
+            document.getElementById('input-roster-headcount')?.addEventListener('input', (e) => {
+                state.maxHeadcount = Math.max(6, Math.min(50, Number(e.target.value) || 6));
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+            });
+
+            document.getElementById('btn-roster-hc-minus')?.addEventListener('click', () => {
+                state.maxHeadcount = Math.max(6, (Number(state.maxHeadcount) || 17) - 1);
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+                showToast(`ปรับจำนวนพนักงานทั้งหมดของสาขาเป็น ${state.maxHeadcount} คน และจัดตารางเวรใหม่แล้ว`);
+            });
+
+            document.getElementById('btn-roster-hc-plus')?.addEventListener('click', () => {
+                state.maxHeadcount = Math.min(50, (Number(state.maxHeadcount) || 17) + 1);
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+                showToast(`ปรับจำนวนพนักงานทั้งหมดของสาขาเป็น ${state.maxHeadcount} คน และจัดตารางเวรใหม่แล้ว`);
+            });
+
+            document.getElementById('btn-export-roster-pdf')?.addEventListener('click', () => {
+                showToast('กำลังเปิดหน้าต่างบันทึกเป็น PDF (แนะนำตั้งค่าเป็นแนวนอน / Landscape)...');
+                setTimeout(() => {
+                    window.print();
+                }, 250);
+            });
+
+            ['input-pct-s1', 'input-pct-s2', 'input-pct-s3'].forEach((id, idx) => {
+                document.getElementById(id)?.addEventListener('input', (e) => {
+                    state.shiftPcts[idx] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                    refreshAll();
+                });
+            });
+
+            document.getElementById('input-service-time')?.addEventListener('input', (e) => {
+                state.serviceTimeMin = Math.max(0.2, Number(e.target.value) || 1.0);
+                refreshAll();
+            });
+
+            document.getElementById('input-non-pos')?.addEventListener('input', (e) => {
+                state.nonPosPct = Math.max(0, Math.min(90, Number(e.target.value) || 0));
+                refreshAll();
+            });
+
+            document.getElementById('input-buffer')?.addEventListener('input', (e) => {
+                state.bufferPct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                refreshAll();
+            });
+
+            document.getElementById('input-pos-count')?.addEventListener('input', (e) => {
+                state.posCount = Math.max(1, Math.min(6, Number(e.target.value) || 3));
+                refreshAll();
+            });
+
+            document.getElementById('input-cafe-pct')?.addEventListener('input', (e) => {
+                state.cafePct = Math.max(0, Math.min(80, Number(e.target.value) || 0));
+                refreshAll();
+            });
+
+            document.getElementById('input-delivery-orders')?.addEventListener('input', (e) => {
+                state.deliveryOrders = Math.max(0, Math.min(500, Number(e.target.value) || 0));
+                refreshAll();
+            });
+
+            document.getElementById('input-fest-customers')?.addEventListener('input', (e) => {
+                state.festCustomers = Math.max(100, Number(e.target.value) || 1960);
+                refreshAll();
+            });
+
+            document.getElementById('input-fest-pct-s1')?.addEventListener('input', (e) => {
+                state.festShiftPcts[0] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                refreshAll();
+            });
+
+            document.getElementById('input-fest-pct-s3')?.addEventListener('input', (e) => {
+                state.festShiftPcts[1] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                refreshAll();
+            });
+
+            document.querySelectorAll('.day-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'INPUT') return;
+                    state.selectedDayIdx = Number(card.dataset.day) || 0;
+                    refreshAll();
+                });
+            });
+
+            [0, 1, 2, 3, 4, 5, 6].forEach(dIdx => {
+                document.getElementById(`input-day-pct-${dIdx}`)?.addEventListener('input', (e) => {
+                    state.dayPcts[dIdx] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                    state.selectedDayIdx = dIdx;
+                    if (state.simMode === 'normal') {
+                        generateSmartRoster(calculateMetrics(), false);
+                    }
+                    refreshAll();
+                });
+            });
+
+            document.getElementById('btn-normalize-days')?.addEventListener('click', () => {
+                const sum = state.dayPcts.reduce((a, b) => a + (Number(b) || 0), 0);
+                if (sum <= 0) {
+                    state.dayPcts = [14, 14, 14, 14, 15, 15, 14];
+                } else {
+                    const scaled = state.dayPcts.map(v => Math.round(((Number(v) || 0) / sum) * 100));
+                    const diff = 100 - scaled.reduce((a, b) => a + b, 0);
+                    scaled[4] = Math.max(0, scaled[4] + diff);
+                    state.dayPcts = scaled;
+                }
+                state.dayPcts.forEach((p, idx) => {
+                    const el = document.getElementById(`input-day-pct-${idx}`);
+                    if (el) el.value = p;
+                });
+                generateSmartRoster(calculateMetrics(), false);
+                refreshAll();
+                showToast('ปรับสัดส่วนลูกค้า 7 วันให้รวมครบ 100% เรียบร้อยแล้ว');
+            });
+
+            document.getElementById('btn-auto-balance')?.addEventListener('click', () => autoBalanceNormalShifts(true));
+            document.getElementById('btn-auto-balance-fest')?.addEventListener('click', () => autoBalanceFestivalShifts(true));
+            document.getElementById('btn-regenerate-roster')?.addEventListener('click', () => generateSmartRoster(calculateMetrics(), true));
+            document.getElementById('btn-sync-gsheet')?.addEventListener('click', () => syncFromGoogleSheets(false));
+        }
+
+        window.onload = function() {
+            init3DScene();
+            bindEvents();
+            selectBranch('5258', false);
+            syncFromGoogleSheets(true);
+            animateLoop();
+        };
+    </script>
+</body>
+</html>
