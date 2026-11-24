@@ -1386,39 +1386,55 @@
                 grid[e][offDay] = -1;
             }
 
-            // 2. Enforce Night Shift (S3) safety rule: at least 2 people every night (1 Assistant + >= 1 Staff)
-            for (let d = 0; d < 7; d++) {
-                let s3Count = 0;
-                for (let e = 0; e < headcount; e++) {
-                    if (grid[e][d] === 2) s3Count++;
+            // Helper: enforce Night Shift (S3) safety rule (>= 2 staff every night) + no S3 -> S1/S2 transition
+            function enforceSafetyRules() {
+                for (let d = 0; d < 7; d++) {
+                    let s3Count = 0;
+                    for (let e = 0; e < headcount; e++) {
+                        if (grid[e][d] === 2) s3Count++;
+                    }
+                    while (s3Count < 2) {
+                        let assigned = false;
+                        // Prefer regular staff who are not OFF today and didn't work S1 yesterday
+                        for (let e = 4; e < headcount; e++) {
+                            const prevD = (d + 6) % 7;
+                            if (grid[e][d] !== -1 && grid[e][d] !== 2 && grid[e][prevD] !== 0) {
+                                grid[e][d] = 2;
+                                s3Count++;
+                                assigned = true;
+                                break;
+                            }
+                        }
+                        // Fallback: any regular staff not OFF today if headcount is very tight
+                        if (!assigned) {
+                            for (let e = 4; e < headcount; e++) {
+                                if (grid[e][d] !== -1 && grid[e][d] !== 2) {
+                                    grid[e][d] = 2;
+                                    s3Count++;
+                                    assigned = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!assigned) break;
+                    }
                 }
-                while (s3Count < 2) {
-                    let assigned = false;
-                    for (let e = 4; e < headcount; e++) {
-                        const prevD = (d + 6) % 7;
-                        if (grid[e][d] !== -1 && grid[e][d] !== 2 && grid[e][prevD] !== 0) {
-                            grid[e][d] = 2;
-                            s3Count++;
-                            assigned = true;
-                            break;
+
+                // Enforce no S3 -> S1/S2 transition for any employee
+                for (let e = 0; e < headcount; e++) {
+                    for (let d = 0; d < 7; d++) {
+                        const nextD = (d + 1) % 7;
+                        if (grid[e][d] === 2 && (grid[e][nextD] === 0 || grid[e][nextD] === 1)) {
+                            grid[e][nextD] = 2;
                         }
                     }
-                    if (!assigned) break;
                 }
             }
 
-            // 3. Final pass: enforce no S3 -> S1/S2 transition for any employee
-            for (let e = 0; e < headcount; e++) {
-                for (let d = 0; d < 7; d++) {
-                    const nextD = (d + 1) % 7;
-                    if (grid[e][d] === 2 && (grid[e][nextD] === 0 || grid[e][nextD] === 1)) {
-                        grid[e][nextD] = 2;
-                    }
-                }
-            }
+            // 2. Initial Safety Pass before rebalancing
+            enforceSafetyRules();
 
-            // 4. Rebalancing Pass: If Afternoon Shift (S2) lacks a supervisor or has < 2 staff,
-            // safely borrow from Morning Shift (S1 >= 4) or surplus Night Shift (S3 >= 3) without breaking S3 -> S1/S2 rest rules.
+            // 3. Rebalancing Pass: Balance S1 and S2 proportionally ONLY when S3 safety (>= 2) is protected
             for (let d = 0; d < 7; d++) {
                 const prevD = (d + 6) % 7;
                 let s1Count = 0, s2Count = 0, s3Count = 0, s2SupCount = 0;
@@ -1464,7 +1480,7 @@
                         }
                     }
 
-                    // Priority B: Borrow regular staff from surplus Night Shift (S3 >= 3) ONLY if yesterday was OFF (-1)
+                    // Priority B: Borrow regular staff from surplus Night Shift (STRICTLY keep s3Count >= 3 before borrowing so S3 never drops below 2)
                     if (!moved && s3Count >= 3) {
                         for (let e = headcount - 1; e >= 4; e--) {
                             if (grid[e][d] === 2 && grid[e][prevD] === -1) {
@@ -1477,9 +1493,12 @@
                         }
                     }
 
-                    if (!moved) break; // Cannot safely rebalance without breaking core rules -> fallback to OT recommendation
+                    if (!moved) break;
                 }
             }
+
+            // 4. Final Safety Lock (ABSOLUTE PRIORITY): Guarantee Night Shift >= 2 and no S3 -> S1/S2 after any rebalancing
+            enforceSafetyRules();
 
             rosterPlan = staffList.map((emp, idx) => ({
                 ...emp,
