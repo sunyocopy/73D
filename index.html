@@ -498,26 +498,26 @@
     </main>
 
     <!-- Print Preview Modal (Mobile-Friendly) -->
-    <div id="print-modal" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-xs overflow-y-auto p-3 sm:p-6">
-        <div class="max-w-6xl mx-auto bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div class="no-print px-4 py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-                <div class="font-bold text-sm flex items-center gap-2">
+    <div id="print-modal" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-xs overflow-y-auto p-1.5 sm:p-6">
+        <div class="max-w-5xl mx-auto bg-white text-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="no-print px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+                <div class="font-bold text-xs sm:text-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-eye text-emerald-400"></i>
-                    <span>ตัวอย่างตารางเวรก่อนพิมพ์ (Print Preview)</span>
+                    <span>ตัวอย่างก่อนพิมพ์ (Print Preview)</span>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="copyRosterForLine()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">
-                        <i class="fa-brands fa-line mr-1"></i>คัดลอกส่ง LINE
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <button onclick="copyRosterForLine()" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
+                        <i class="fa-brands fa-line mr-1"></i>คัดลอก LINE
                     </button>
-                    <button onclick="window.print()" class="px-3 py-1.5 rounded-xl bg-seven-orange hover:bg-orange-600 text-white text-xs font-bold cursor-pointer">
-                        <i class="fa-solid fa-print mr-1"></i>สั่งพิมพ์ / บันทึก PDF
+                    <button onclick="window.print()" class="px-2.5 py-1.5 rounded-xl bg-seven-orange hover:bg-orange-600 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
+                        <i class="fa-solid fa-print mr-1"></i>พิมพ์ / PDF
                     </button>
-                    <button onclick="closePrintPreview()" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">
+                    <button onclick="closePrintPreview()" class="px-2.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
                         ปิด
                     </button>
                 </div>
             </div>
-            <div id="print-preview-area" class="p-4 sm:p-6 overflow-x-auto">
+            <div id="print-preview-area" class="p-2.5 sm:p-6 overflow-x-auto">
                 <!-- Populated dynamically -->
             </div>
         </div>
@@ -1677,32 +1677,67 @@
             const area = document.getElementById('print-preview-area');
             if (!modal || !area) return;
 
-            const shiftLabels = { 0: 'กะ 1 เช้า', 1: 'กะ 2 บ่าย', 2: 'กะ 3 ดึก', '-1': 'OFF' };
+            const shiftLabels = { 0: 'เช้า', 1: 'บ่าย', 2: 'ดึก', '-1': 'OFF' };
+            const shiftColors = {
+                0: 'bg-emerald-50 text-emerald-900',
+                1: 'bg-orange-50 text-orange-900',
+                2: 'bg-indigo-50 text-indigo-900',
+                '-1': 'bg-slate-100 text-slate-500'
+            };
             const branchName = BRANCH_DATA[state.selectedBranch]?.name || state.selectedBranch;
 
+            // Calculate daily summary (Morning/Afternoon/Night + OFF)
+            const dailySummary = Array.from({ length: 7 }, () => ({ s1: 0, s2: 0, s3: 0, off: 0 }));
+            rosterPlan.forEach(emp => {
+                emp.days.forEach((c, dIdx) => {
+                    if (c === 0) dailySummary[dIdx].s1++;
+                    else if (c === 1) dailySummary[dIdx].s2++;
+                    else if (c === 2) dailySummary[dIdx].s3++;
+                    else if (c === -1) dailySummary[dIdx].off++;
+                });
+            });
+
             area.innerHTML = `
-                <div class="mb-3 flex flex-wrap items-center justify-between border-b border-slate-300 pb-2">
+                <div class="mb-2.5 flex flex-wrap items-center justify-between gap-1 border-b border-slate-300 pb-2">
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">ตารางจัดกะและสลับวันหยุดพนักงาน 7-Eleven สาขา ${branchName}</h3>
-                        <p class="text-xs text-slate-600">จำนวนพนักงานทั้งหมด ${rosterPlan.length} คน (ทำงาน 6 วัน / หยุด 1 วัน)</p>
+                        <h3 class="text-xs sm:text-base font-bold text-slate-900">ตารางจัดกะและสลับวันหยุด 7-Eleven สาขา ${branchName}</h3>
+                        <p class="text-[10px] sm:text-xs text-slate-600">พนักงานทั้งหมด ${rosterPlan.length} คน (ทำงาน 6 วัน / หยุด 1 วัน)</p>
                     </div>
-                    <div class="text-xs text-slate-500">พิมพ์เมื่อ: ${new Date().toLocaleDateString('th-TH')}</div>
+                    <div class="text-[10px] sm:text-xs text-slate-500">พิมพ์เมื่อ: ${new Date().toLocaleDateString('th-TH')}</div>
                 </div>
-                <table class="w-full border-collapse border border-slate-400 text-xs">
+                <table class="w-full border-collapse border border-slate-400 text-[10px] sm:text-xs">
                     <thead>
                         <tr class="bg-slate-200">
-                            <th class="border border-slate-400 py-2 px-2 text-left">ชื่อพนักงาน / ตำแหน่ง</th>
-                            ${state.dayFullNames.map(d => `<th class="border border-slate-400 py-2 px-2 text-center">${d}</th>`).join('')}
+                            <th class="border border-slate-400 py-1.5 px-1.5 sm:px-2 text-left whitespace-nowrap">ชื่อ / ตำแหน่ง</th>
+                            ${state.dayShortNames.map((d, idx) => `
+                                <th class="border border-slate-400 py-1.5 px-1 text-center ${idx >= 4 ? 'text-seven-red' : ''}">
+                                    <span class="sm:hidden">${d}</span>
+                                    <span class="hidden sm:inline">${state.dayFullNames[idx]}</span>
+                                </th>
+                            `).join('')}
                         </tr>
                     </thead>
                     <tbody>
                         ${rosterPlan.map(emp => `
                             <tr>
-                                <td class="border border-slate-400 py-1.5 px-2 font-semibold">${emp.name} <span class="text-[10px] text-slate-500">(${emp.role})</span></td>
-                                ${emp.days.map(c => `<td class="border border-slate-400 py-1.5 px-2 text-center font-bold ${c === -1 ? 'bg-slate-100 text-slate-500' : ''}">${shiftLabels[c]}</td>`).join('')}
+                                <td class="border border-slate-400 py-1 px-1.5 sm:px-2 font-semibold whitespace-nowrap">
+                                    ${emp.name} <span class="text-[9px] sm:text-[10px] text-slate-500 font-normal">(${emp.role.split('/')[0].trim()})</span>
+                                </td>
+                                ${emp.days.map(c => `<td class="border border-slate-400 py-1 px-1 text-center font-bold ${shiftColors[c]}">${shiftLabels[c]}</td>`).join('')}
                             </tr>
                         `).join('')}
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-slate-100 font-bold border-t-2 border-slate-500">
+                            <td class="border border-slate-400 py-1.5 px-1.5 sm:px-2 text-left whitespace-nowrap">สรุป (เช้า/บ่าย/ดึก)</td>
+                            ${dailySummary.map(ds => `
+                                <td class="border border-slate-400 py-1.5 px-0.5 text-center leading-tight">
+                                    <div class="text-seven-green">${ds.s1}/${ds.s2}/${ds.s3}</div>
+                                    <div class="text-[9px] text-slate-500 font-normal">OFF ${ds.off}</div>
+                                </td>
+                            `).join('')}
+                        </tr>
+                    </tfoot>
                 </table>
             `;
 
