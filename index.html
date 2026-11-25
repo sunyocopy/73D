@@ -52,7 +52,7 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200">
 
-    <!-- Top Navigation & Sync Header -->
+    <!-- Top Navigation Header -->
     <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
@@ -69,11 +69,7 @@
                 </div>
             </div>
 
-            <!-- Google Sheets / Apps Script Live Sync Controls -->
-            <div class="flex flex-wrap items-center gap-2">
-                <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px]">
-                    <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <!-- Theme Toggle Controls -->
+            <!-- Mode & Theme Toggle Controls -->
             <div class="flex flex-wrap items-center gap-2">
                 <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px]">
                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -163,12 +159,12 @@
                     <!-- Actual Working & Total Headcount -->
                     <div class="grid grid-cols-2 gap-2.5 pt-1">
                         <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                            <div class="text-[11px] text-slate-500 dark:text-slate-400">พนักงานทั้งหมด (สูงสุด 18 คน)</div>
-                            <input type="number" id="input-max-headcount" min="6" max="18" value="17" oninput="onHeadcountInput(this.value)" class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400">คนมาปฏิบัติงานจริงวันนี้ (คน)</div>
+                            <input type="number" id="input-actual-staff" min="1" max="18" value="14" readonly class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 font-bold text-right text-seven-green cursor-not-allowed" title="คำนวณอัตโนมัติจากตารางที่ 3">
                         </div>
                         <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                            <div class="text-[11px] text-slate-500 dark:text-slate-400">พนักงานทั้งหมด (คน)</div>
-                            <input type="number" id="input-max-headcount" min="5" max="35" value="17" oninput="onHeadcountInput(this.value)" class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400">พนักงานทั้งหมด (สูงสุด 18 คน)</div>
+                            <input type="number" id="input-max-headcount" min="6" max="18" value="17" oninput="onHeadcountInput(this.value)" class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
                         </div>
                     </div>
                 </div>
@@ -262,7 +258,7 @@
                         ตารางที่ 1: วิเคราะห์อัตรากำลังคนและแถวคอย M/M/S รายกะ (วันปกติ 3 ผลัด)
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        คลิกที่ชื่อพนักงานเพื่อพิมพ์แก้เป็นชื่อจริง และคลิกที่ช่องกะของแต่ละคนเพื่อสลับกะได้ทันที • จัดคนลงกะเต็มกำลังช่วง ศุกร์–อาทิตย์
+                        เปรียบเทียบจำนวนคนที่จัดจริงจากตารางที่ 3 กับเกณฑ์แนะนำรายกะและภาระงานช่วงพีค
                     </p>
                 </div>
                 <span id="table1-day-label" class="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-seven-green dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
@@ -355,7 +351,7 @@
                         <span class="text-slate-500">คน</span>
                     </div>
 
-                    <button onclick="generateSmartRoster(); renderRosterTable(); showToast('จัดตารางเวรและวันหยุดใหม่เรียบร้อยแล้ว');" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">
+                    <button onclick="generateSmartRoster(); refreshAll(); showToast('จัดตารางเวรและวันหยุดใหม่เรียบร้อยแล้ว');" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">
                         <i class="fa-solid fa-wand-magic-sparkles mr-1 text-seven-orange"></i>จัดอัตโนมัติ
                     </button>
 
@@ -406,7 +402,7 @@
                     <li><strong>วันหยุดของผู้จัดการร้าน (ผจก.)</strong> กำหนดให้หยุดได้ <strong>เฉพาะวันเสาร์ (ส) หรือ วันอาทิตย์ (อา) เท่านั้น</strong> เนื่องจากวันธรรมดา (จันทร์–ศุกร์) ผจก. ต้องอยู่บริหารจัดการเงินสด ฝากเงินธนาคาร และเคลียร์เอกสารบัญชี</li>
                     <li><strong>จัดผู้ช่วยฯ ผลัดดึกเพียง 1 คนต่อคืน:</strong> ผลัดดึก (22:00 - 07:00 น.) มีผู้ช่วยฯ ประจำเพียง 1 คนเท่านั้น (ไม่ให้ผู้ช่วยฯ 2 คนอยู่ซ้อนกันในผลัดดึก) โดยผู้ช่วยฯ ผลัดเช้า-บ่ายจะหมุนเวียนมาช่วยคุมผลัดดึกเฉพาะวันที่ผู้ช่วยฯ ผลัดดึกหยุดประจำสัปดาห์ แล้วจึงให้หยุดพัก (OFF) ในวันถัดไป</li>
                     <li class="text-seven-red dark:text-rose-400 font-semibold"><strong>กฎความปลอดภัยผลัดดึก (ห้ามอยู่คนเดียว):</strong> ผลัดดึก (22:00 - 07:00 น.) <strong>ห้ามมีพนักงานอยู่เพียง 1 คนโดยเด็ดขาด ต้องมีผู้ปฏิบัติงานรวมอย่างน้อย 2 คนทุกคืน</strong> (ผู้ช่วยฯ 1 คน + พนักงานประจำกะดึกอย่างน้อย 1 คน) เพื่อความปลอดภัยของพนักงานและร้าน</li>
-                    <li class="text-blue-700 dark:text-blue-300 font-semibold"><strong>กฎการเกลี่ยกำลังคนอัตโนมัติ &amp; คำแนะนำ OT:</strong> หากวันใด <strong>กะบ่ายมีพนักงานน้อยกว่า 2 คน หรือไม่มีผู้ช่วยฯ คุมผลัดบ่าย</strong> ระบบจะพิจารณาเกลี่ยพนักงานหรือผู้ช่วยฯ จากกะเช้า (ที่มี ≥ 4 คน) หรือกะดึก (ที่มี ≥ 3 คน และไม่ผิดกฎพักกะข้ามคืน) มาเติมกะบ่ายให้อัตโนมัติ แต่หากไม่สามารถเกลี่ยได้ตามกฎพักกะ ระบบจะคงตารางเดิมไว้และแจ้งแนะนำให้จัดพนักงานทำ <strong>OT ช่วงพีคเย็น (15:00–19:00 น.)</strong></li>
+                    <li class="text-blue-700 dark:text-blue-300 font-semibold"><strong>กฎการเกลี่ยกำลังคนอัตโนมัติ &amp; คำแนะนำ OT:</strong> ระบบจะเกลี่ยคนระหว่างกะเช้าและกะบ่ายเฉพาะเมื่อมี <strong>กะที่คนเกินเกณฑ์แนะนำ</strong> และ <strong>กะที่คนขาดเกณฑ์แนะนำ</strong> เกิดขึ้นพร้อมกันในวันนั้นเท่านั้น หากไม่สามารถเกลี่ยได้ตามกฎพักกะ จะคงตารางเดิมไว้และแนะนำให้จัดพนักงานทำ <strong>OT ช่วงพีคเย็น (15:00–19:00 น.)</strong></li>
                     <li>พนักงานทุกคน (รวม ผจก. และผู้ช่วยฯ) ทำงานสัปดาห์ละ 6 วัน และสลับหยุดประจำสัปดาห์คนละ 1 วัน โดยผู้ช่วยฯ และพนักงานทั่วไปเน้นหยุดช่วงวันจันทร์–พฤหัสบดี เพื่อให้วันศุกร์–อาทิตย์มีกำลังคนเต็มประสิทธิภาพ</li>
                     <li><strong>กฎข้อห้ามสำคัญ (ห้ามควงกะข้ามคืน &amp; การพักหลังออกกะดึก):</strong> พนักงานและผู้ช่วยฯ ที่เข้า <strong>กะ 3 ดึก (22:00 - 07:00 น.)</strong> ห้ามเข้า <strong>กะ 1 เช้า (06:00 - 15:00 น.)</strong> ในวันถัดไปโดยเด็ดขาด และหลีกเลี่ยงการต่อ <strong>กะ 2 บ่าย (14:00 - 23:00 น.)</strong> ทันทีหลังออกกะดึก (ให้ยืน กะ 3 ดึกต่อเนื่อง หรือจัดเป็น วันหยุด (OFF) ในวันถัดไปเพื่อให้พนักงานได้พักผ่อนเต็มที่)</li>
                 </ul>
@@ -422,6 +418,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                 <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                     <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-slate-900 dark:text-white">1. เวลาคิดเงินแคชเชียร์ (POS)</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">อ้างอิงทฤษฎี M/M/S</span>
+                    </div>
+                    <p class="text-slate-700 dark:text-slate-300">ใช้เวลาเฉลี่ย <strong>1.0 นาที / ลูกค้า 1 คน</strong> (μ = 60 คน/ชม./เครื่อง) อ้างอิงทฤษฎีแถวคอย <strong>M/M/S (Queueing Theory)</strong> สำหรับร้านสะดวกซื้อ 3 ช่องบริการ (S=3)</p>
+                </div>
+
+                <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                    <div class="flex items-center justify-between mb-1">
                         <span class="font-bold text-slate-900 dark:text-white">2. พนักงานส่ง 7-Delivery (ควบหน้าที่)</span>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">ปรับตามจริง</span>
                     </div>
@@ -435,31 +439,13 @@
                     </div>
                     <p class="text-slate-700 dark:text-slate-300">แยกบาริสต้าหลัก <strong>1 คน</strong> ในกะเช้าและกะบ่าย (อุ่นไมโครเวฟควบคู่กับ POS ส่วน<strong>ผลัดดึก = 0 คน</strong> แคชเชียร์ดูแลเอง)</p>
                 </div>
-                    <p class="text-slate-700 dark:text-slate-300">ใช้เวลาเฉลี่ย <strong>1.0 นาที / ลูกค้า 1 คน</strong> ($\mu = 60$ คน/ชม./เครื่อง) อ้างอิงทฤษฎีแถวคอย <strong>M/M/S (Queueing Theory)</strong> สำหรับร้านสะดวกซื้อ 3 ช่องบริการ ($S=3$)</p>
-                </div>
-
-                <div class="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-slate-900 dark:text-white">2. พนักงานส่ง 7-Delivery</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white">ค่าม็อกอัพ (Mockup)</span>
-                    </div>
-                    <p class="text-slate-700 dark:text-slate-300">ใช้เวลาจัดออเดอร์และวิ่งส่งเฉลี่ย <strong>~45 นาที / 1 ออเดอร์</strong> (1.33 บิล/ชม./คน) กระจายเฉพาะกะเช้า 48% และกะบ่าย 52% (<strong>ผลัดดึก = 0 บิล</strong>)</p>
-                </div>
-
-                <div class="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-slate-900 dark:text-white">3. All Café &amp; อุ่นอาหารร้อน</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white">ค่าม็อกอัพ (Mockup)</span>
-                    </div>
-                    <p class="text-slate-700 dark:text-slate-300">ใช้เวลาชงเครื่องดื่มหรืออุ่นไมโครเวฟเฉลี่ย <strong>~3.0 นาที / 1 ครั้ง</strong> (20 รายการ/ชม./คน) คำนวณแยกจากจุดคิดเงิน POS</p>
-                </div>
 
                 <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                     <div class="flex items-center justify-between mb-1">
                         <span class="font-bold text-slate-900 dark:text-white">4. ชั่วโมงเร่งด่วน (Reaching Hours)</span>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">อ้างอิงทฤษฎี + POS</span>
                     </div>
-                    <p class="text-slate-700 dark:text-slate-300">ช่วงลูกค้าหนาแน่น 50–80+ คน/ชม. ต้องเปิดครบ 3 เครื่อง POS ($S=3$) ใช้ข้อมูลจริงราย 2 ชม. สำหรับสาขา <strong>15313 (NS)</strong> และค่า Mockup สำหรับอีก 5 สาขา</p>
+                    <p class="text-slate-700 dark:text-slate-300">ช่วงลูกค้าหนาแน่น 50–80+ คน/ชม. ต้องเปิดครบ 3 เครื่อง POS (S=3) ใช้ข้อมูลจริงราย 2 ชม. สำหรับสาขา <strong>15313 (NS)</strong> และค่า Mockup สำหรับอีก 5 สาขา</p>
                 </div>
 
                 <div class="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
@@ -472,10 +458,10 @@
 
                 <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                     <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-slate-900 dark:text-white">6. อัตราเผื่อวันหยุดประจำสัปดาห์</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">อ้างอิงกฎหมายแรงงาน</span>
+                        <span class="font-bold text-slate-900 dark:text-white">6. เพดานกำลังคน &amp; เผื่อวันหยุด</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">สูงสุด 18 คน/สาขา</span>
                     </div>
-                    <p class="text-slate-700 dark:text-slate-300">กำหนด <strong>+20%</strong> (ทำงาน 6 วัน / หยุด 1 วันต่อสัปดาห์ = $1/6 \approx 16.7\%$ ปัดเป็น 20% รวมเผื่อลาป่วย)</p>
+                    <p id="sales-quota-standard-text" class="text-slate-700 dark:text-slate-300">คุมเพดานพนักงานสูงสุด <strong>18 คน/สาขา</strong> (ทำงาน 6 วัน / หยุด 1 วันต่อสัปดาห์ เผื่อวันหยุด +20%)</p>
                 </div>
             </div>
         </section>
@@ -527,19 +513,38 @@
     </div>
 
     <script>
-        // Google Apps Script Web App URL (supports both /exec JSON and /pub?output=csv)
-        const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbw6M2j0dNBHKuzponpz3OZxh8ApzgcOLkM-9iA6UpLzz0Y9VopjJ4u2WFuqzktz815o/exec';
+        // สูตรเกณฑ์กำลังคนตามยอดขายของบริษัท (FTE: .0 = ประจำ 9 ชม., .5 = พาร์ทไทม์ 4 ชม., สูงสุด 18 คน/สาขา)
+        function calcSalesQuotaFTE(dailySales) {
+            const sales = Number(dailySales) || 0;
+            if (sales < 40000) {
+                return { isValid: false, fte: 10, fullTime: 10, partTime: 0, totalHeads: 10 };
+            }
+            const rawFte = Math.min(20.5, 10 + Math.floor((sales - 40000) / 5000) * 0.5);
+            const fullTime = Math.floor(rawFte);
+            const partTime = (rawFte % 1) >= 0.5 ? 1 : 0;
+            const totalHeads = Math.min(18, fullTime + partTime);
+            const cappedFullTime = totalHeads === 18 && (fullTime + partTime) > 18 ? 18 : fullTime;
+            const cappedPartTime = totalHeads === 18 && (fullTime + partTime) > 18 ? 0 : partTime;
+            return {
+                isValid: true,
+                fte: Math.min(18, rawFte),
+                fullTime: cappedFullTime,
+                partTime: cappedPartTime,
+                totalHeads
+            };
+        }
 
-        // 6 Branches Data (with real 7-Delivery orders & 15313 real 2-hour traffic)
+        // 6 Branches Data (with real dailySales, real 7-Delivery orders & 15313 real 2-hour traffic)
         const BRANCH_DATA = {
             '5258': {
                 code: '5258',
                 name: '5258 (NL)',
+                dailySales: 86808,
                 totalCustomers: 1042,
                 dayPcts: [12, 12, 12, 13, 15, 18, 18],
                 shiftPcts: [44, 44, 12],
                 actualStaff: 14,
-                maxHeadcount: 17,
+                maxHeadcount: calcSalesQuotaFTE(86808).totalHeads,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 25,
@@ -553,11 +558,12 @@
             '10666': {
                 code: '10666',
                 name: '10666 (NP)',
+                dailySales: 95672,
                 totalCustomers: 1007,
                 dayPcts: [12, 12, 12, 13, 15, 18, 18],
                 shiftPcts: [45, 43, 12],
                 actualStaff: 14,
-                maxHeadcount: 16,
+                maxHeadcount: calcSalesQuotaFTE(95672).totalHeads,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 25,
@@ -571,11 +577,12 @@
             '7397': {
                 code: '7397',
                 name: '7397 (VP)',
+                dailySales: 89395,
                 totalCustomers: 840,
                 dayPcts: [13, 12, 12, 13, 15, 18, 17],
                 shiftPcts: [49, 38, 13],
                 actualStaff: 13,
-                maxHeadcount: 15,
+                maxHeadcount: calcSalesQuotaFTE(89395).totalHeads,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 25,
@@ -589,11 +596,12 @@
             '8148': {
                 code: '8148',
                 name: '8148 (PP)',
+                dailySales: 74443,
                 totalCustomers: 815,
                 dayPcts: [13, 12, 12, 13, 15, 18, 17],
                 shiftPcts: [48, 39, 13],
                 actualStaff: 13,
-                maxHeadcount: 15,
+                maxHeadcount: calcSalesQuotaFTE(74443).totalHeads,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 25,
@@ -607,11 +615,12 @@
             '13284': {
                 code: '13284',
                 name: '13284 (SP)',
+                dailySales: 71563,
                 totalCustomers: 766,
                 dayPcts: [13, 13, 12, 13, 15, 17, 17],
                 shiftPcts: [44, 44, 12],
                 actualStaff: 12,
-                maxHeadcount: 14,
+                maxHeadcount: calcSalesQuotaFTE(71563).totalHeads,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 20,
@@ -619,17 +628,18 @@
                 nonPosPct: 30,
                 bufferPct: 20,
                 festMult: 1.7,
-                isHourlyReal: false,
-                hourlyCust2Hr: [96, 100, 82, 92, 88, 74, 86, 48, 28, 12, 22, 38]
+                isHourlyReal: true,
+                hourlyCust2Hr: [109, 104, 95, 102, 123, 117, 97, 75, 16, 23, 10, 11]
             },
             '15313': {
                 code: '15313',
                 name: '15313 (NS)',
+                dailySales: 70586,
                 totalCustomers: 762,
                 dayPcts: [13, 13, 12, 13, 15, 17, 17],
                 shiftPcts: [56, 32, 12],
                 actualStaff: 12,
-                maxHeadcount: 14,
+                maxHeadcount: calcSalesQuotaFTE(70586).totalHeads,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 20,
@@ -742,7 +752,7 @@
             state.dayPcts = [...b.dayPcts];
             state.shiftPcts = [...b.shiftPcts];
             state.actualStaff = b.actualStaff;
-            state.maxHeadcount = b.maxHeadcount;
+            state.maxHeadcount = Math.min(18, b.maxHeadcount);
             state.serviceTimeMin = b.serviceTimeMin;
             state.posCount = b.posCount;
             state.cafePct = b.cafePct;
@@ -814,6 +824,14 @@
             }
             const hcBadge = document.getElementById('roster-headcount-badge');
             if (hcBadge) hcBadge.textContent = state.maxHeadcount;
+
+            const stdEl = document.getElementById('sales-quota-standard-text');
+            if (stdEl && b && b.dailySales) {
+                const q = calcSalesQuotaFTE(b.dailySales);
+                const ptText = q.partTime > 0 ? ` + พาร์ทไทม์ 4 ชม. ${q.partTime} คน` : '';
+                stdEl.innerHTML = `สาขา <strong>${b.name}</strong> ยอดขายเฉลี่ย <strong>${b.dailySales.toLocaleString()} บ./วัน</strong> → รับได้ตามสูตร <strong>${q.fte} FTE</strong> (ประจำ 9 ชม. <strong>${q.fullTime} คน</strong>${ptText} = รวม <strong>${q.totalHeads} คน</strong>) ภายใต้เพดานสูงสุด <strong>18 คน/สาขา</strong> (ทำงาน 6 วัน / หยุด 1 วัน เผื่อวันหยุด +20%)`;
+            }
+
             renderBranchPills();
         }
 
@@ -866,7 +884,6 @@
                 return el ? (Number(el.value) || 0) : fallback;
             };
             state.totalCustomers = Math.max(50, getNum('input-total-cust', 1000));
-            state.actualStaff = Math.max(1, getNum('input-actual-staff', 14));
             state.shiftPcts = [
                 getNum('input-pct-s1', 44),
                 getNum('input-pct-s2', 44),
@@ -899,6 +916,7 @@
             generateSmartRoster();
             refreshAll();
         }
+
         // ขั้นที่ 1: คำนวณเกณฑ์กำลังคนแนะนำของแต่ละวัน (จันทร์-อาทิตย์) ภายใต้นโยบายสูงสุด 18 คน/สาขา + งานควบหน้าที่จริง
         function getRecommendedForDay(dayIdx) {
             const dayCust = getDayCustomers(dayIdx);
@@ -906,7 +924,6 @@
             const delivShares = [0.48, 0.52, 0];
             const MAX_STORE_STAFF = 18;
 
-            // 1) คำนวณตามภาระงานควบหน้าที่จริงของแต่ละกะ
             const rawShifts = [0, 1, 2].map(idx => {
                 const share = (state.shiftPcts[idx] || 0) / totalPct;
                 const custInShift = Math.round(dayCust * share);
@@ -947,12 +964,11 @@
                 };
             });
 
-            // 2) คุมเพดานไม่ให้เกินขีดจำกัดสูงสุดของสาขา (สูงสุด 18 คน/วันในวันศุกร์-อาทิตย์ และ 15 คนในวันจันทร์-พฤหัสบดี)
+            // คุมเพดานไม่ให้เกินขีดจำกัดสูงสุดของสาขา (สูงสุด 18 คน/วันในวันศุกร์-อาทิตย์ และ 15 คนในวันจันทร์-พฤหัสบดี)
             const maxDailyCap = dayIdx >= 4 ? MAX_STORE_STAFF : Math.min(MAX_STORE_STAFF, 15);
             let sumRec = rawShifts.reduce((s, x) => s + x.recommended, 0);
 
             while (sumRec > maxDailyCap) {
-                // ลดจากกะที่มีคนเยอะสุดก่อน (ระหว่างกะเช้าและกะบ่าย โดยไม่ลดกะดึกต่ำกว่า 2 คน)
                 const targetIdx = rawShifts[0].recommended >= rawShifts[1].recommended ? 0 : 1;
                 if (rawShifts[targetIdx].recommended <= 3) break;
                 rawShifts[targetIdx].recommended--;
@@ -1110,7 +1126,6 @@
                 const activeLanes = Math.min(state.posCount, Math.max(1, Math.min(posRequired, actual)));
                 const queue = computeMMSQueue(custInShift, netHours, activeLanes, state.serviceTimeMin, meta.peakMult, realPeakHourly);
 
-                // คำนวณจำนวนเครื่อง POS ที่ควรเปิดช่วงพีคเพื่อไม่ให้แถวคอยเกิน 3 คน/แถว
                 let recPeakLanes = activeLanes;
                 while (recPeakLanes < state.posCount) {
                     const testQ = computeMMSQueue(custInShift, netHours, recPeakLanes, state.serviceTimeMin, meta.peakMult, realPeakHourly);
@@ -1168,17 +1183,17 @@
                     <div class="text-[11px] text-slate-500 mt-1">รอ ~${activeShift.queue.waitMinutes} นาที (เปิด ${activeShift.activeLanes} เครื่อง)</div>
                 </div>
                 <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-500 font-medium">คนมาปฏิบัติงานจริงวันนี้</div>
+                    <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">${metrics.totalActual} <span class="text-xs font-normal text-slate-500">/ แนะนำ ${metrics.totalRecommended} คน</span></div>
+                    <div class="text-[11px] ${metrics.totalActual >= metrics.totalRecommended ? 'text-seven-green' : 'text-seven-orange'} font-semibold mt-1">
+                        ${metrics.totalActual >= metrics.totalRecommended ? 'กำลังคนเพียงพอต่อปริมาณลูกค้า' : `ขาด ${metrics.totalRecommended - metrics.totalActual} คน (เสริม OT ช่วงพีค)`}
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div class="text-xs text-slate-500 font-medium">พนักงานขึ้นทะเบียนทั้งหมด (เพดาน 18)</div>
                     <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">${state.maxHeadcount} <span class="text-xs font-normal text-slate-500">/ เป้าหมาย ${metrics.totalWithBuffer} คน</span></div>
                     <div class="text-[11px] ${diffHeadcount >= 0 ? 'text-seven-green' : 'text-seven-orange'} font-semibold mt-1">
                         ${diffHeadcount >= 0 ? `เพียงพอภายใต้เพดาน 18 คน (+${diffHeadcount} คน)` : `ขาดอีก ${Math.abs(diffHeadcount)} คน (สูงสุดไม่เกิน 18 คน)`}
-                    </div>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div class="text-xs text-slate-500 font-medium">พนักงานขึ้นทะเบียนทั้งหมด</div>
-                    <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">${state.maxHeadcount} <span class="text-xs font-normal text-slate-500">/ เป้าหมาย ${metrics.totalWithBuffer} คน</span></div>
-                    <div class="text-[11px] ${diffHeadcount >= 0 ? 'text-seven-green' : 'text-seven-orange'} font-semibold mt-1">
-                        ${diffHeadcount >= 0 ? `เผื่อวันหยุดครบ (+${diffHeadcount} คน)` : `ควรเผื่อวันหยุดเพิ่มอีก ${Math.abs(diffHeadcount)} คน`}
                     </div>
                 </div>
             `;
@@ -1271,7 +1286,7 @@
                 const queue = computeMMSQueue(cust, f.netHours, state.posCount, state.serviceTimeMin, 1.35, 0);
                 const posReq = Math.min(state.posCount, Math.max(2, Math.ceil(((cust * state.serviceTimeMin) / 60) / (f.netHours * 0.8))));
                 const cafeReq = Math.max(1, Math.round(((cust * (state.cafePct / 100) * 3) / 60) / (f.netHours * 0.8)));
-                const delivReq = idx === 0 ? Math.max(1, Math.round((state.deliveryOrders * state.festMult * 45 / 60) / (f.netHours * 0.8))) : 0;
+                const delivReq = idx === 0 ? Math.max(1, Math.round((state.deliveryOrders * state.festMult * 22 / 60) / (f.netHours * 0.8))) : 0;
                 const stockReq = Math.max(1, Math.round((posReq + cafeReq) * 0.35));
                 const recommended = posReq + cafeReq + delivReq + stockReq;
                 const available = idx === 0 ? Math.ceil(state.maxHeadcount * 0.65) : Math.floor(state.maxHeadcount * 0.35);
@@ -1333,11 +1348,9 @@
 
             // 2.2 Ensure Assistant Coverage across all 3 shifts every day
             for (let d = 0; d < 7; d++) {
-                // If Asst 3 (Night, idx 3) is OFF on Wednesday (d=2), Asst 1 (idx 1) covers Night shift
                 if (pool[3] && pool[3].days[d] === -1 && pool[1] && pool[1].days[d] !== -1) {
                     pool[1].days[d] = 2;
                 }
-                // If Asst 2 (Afternoon, idx 2) is OFF on Tuesday (d=1), Asst 1 (idx 1) covers Afternoon shift
                 if (pool[2] && pool[2].days[d] === -1 && pool[1] && pool[1].days[d] === 0) {
                     pool[1].days[d] = 1;
                 }
@@ -1378,7 +1391,6 @@
                 while (s2Count > recS2 && s1Count < recS1 && s2Movable.length > 0) {
                     const moveIdx = s2Movable.pop();
                     const prevShift = d > 0 ? pool[moveIdx].days[d - 1] : -1;
-                    // ห้ามย้ายเข้ากะเช้าหากเมื่อวานเข้ากะดึก (ป้องกันควงกะข้ามคืน)
                     if (prevShift !== 2) {
                         pool[moveIdx].days[d] = 0;
                         s2Count--;
@@ -1472,7 +1484,6 @@
                 `;
             }).join('');
 
-            // Daily summary & Safety validation
             const daySummaries = Array.from({ length: 7 }, () => ({ s1: 0, s2: 0, s3: 0, off: 0 }));
             const warnings = [];
 
@@ -1501,12 +1512,14 @@
             tfoot.innerHTML = `
                 <tr>
                     <td class="py-3 px-3 text-slate-800 dark:text-slate-100">สรุปคนเข้ากะรายวัน (เช้า/บ่าย/ดึก)</td>
-                    ${daySummaries.map(ds => {
+                    ${daySummaries.map((ds, dIdx) => {
                         const totalWork = ds.s1 + ds.s2 + ds.s3;
+                        const rec = getRecommendedForDay(dIdx);
                         return `
                             <td class="py-2.5 px-1.5 text-center leading-tight">
                                 <div class="text-slate-900 dark:text-white">รวม ${totalWork} คน</div>
                                 <div class="text-[11px] text-seven-green">${ds.s1}/${ds.s2}/${ds.s3} <span class="text-slate-500 font-normal">(${ds.off} OFF)</span></div>
+                                <div class="text-[10px] text-slate-500 font-normal">เกณฑ์ ${rec[0].recommended}/${rec[1].recommended}/${rec[2].recommended}</div>
                             </td>
                         `;
                     }).join('')}
@@ -1595,7 +1608,6 @@
             showToast(`บันทึกข้อมูลของ "${emp.name}" เรียบร้อยแล้ว`);
         }
 
-        // Print Preview & LINE Share Helpers
         function openPrintPreview() {
             const modal = document.getElementById('print-modal');
             const area = document.getElementById('print-preview-area');
@@ -1610,7 +1622,6 @@
             };
             const branchName = BRANCH_DATA[state.selectedBranch]?.name || state.selectedBranch;
 
-            // Calculate daily summary (Morning/Afternoon/Night + OFF)
             const dailySummary = Array.from({ length: 7 }, () => ({ s1: 0, s2: 0, s3: 0, off: 0 }));
             rosterPlan.forEach(emp => {
                 emp.days.forEach((c, dIdx) => {
@@ -1678,7 +1689,6 @@
             if (!area) return;
 
             try {
-                // สร้างหน้าต่างใหม่สำหรับพิมพ์ A4 แนวนอนโดยเฉพาะ (แก้ปัญหา window.print() ถูกบล็อกใน iFrame / Preview)
                 const printWin = window.open('', '_blank', 'width=1024,height=768');
                 if (printWin) {
                     printWin.document.open();
@@ -1714,10 +1724,9 @@
                     return;
                 }
             } catch (e) {
-                // Fallback หากเบราว์เซอร์บล็อกป๊อบอัพ
+                // Fallback
             }
 
-            // กรณีป๊อบอัพถูกบล็อก ให้สั่งพิมพ์หน้าปัจจุบันโดยตรง
             window.print();
         }
 
