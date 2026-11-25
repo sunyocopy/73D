@@ -290,7 +290,7 @@
                         ตารางที่ 1: วิเคราะห์อัตรากำลังคนและแถวคอย M/M/S รายกะ (วันปกติ 3 ผลัด)
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        เปรียบเทียบกำลังคนจัดจริงกับเกณฑ์แนะนำทุกหน้าที่ (POS + All Café/อุ่นร้อน + 7-Delivery + เติมสินค้า)
+                        คลิกที่ชื่อพนักงานเพื่อพิมพ์แก้เป็นชื่อจริง และคลิกที่ช่องกะของแต่ละคนเพื่อสลับกะได้ทันที • จัดคนลงกะเต็มกำลังช่วง ศุกร์–อาทิตย์
                     </p>
                 </div>
                 <span id="table1-day-label" class="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-seven-green dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
@@ -523,6 +523,24 @@
         </div>
     </div>
 
+    <!-- Edit Employee Name & 7-Day Shifts Modal -->
+    <div id="edit-emp-modal" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-xs overflow-y-auto p-3 sm:p-6 flex items-center justify-center">
+        <div class="w-full max-w-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="px-4 py-3 bg-seven-green text-white flex items-center justify-between">
+                <div class="font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-user-pen"></i>
+                    <span>แก้ไขชื่อพนักงานและตารางกะ 7 วัน</span>
+                </div>
+                <button onclick="closeEditEmpModal()" class="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-xs font-bold cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="edit-emp-modal-body" class="p-4 space-y-4">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // Google Apps Script Web App URL (supports both /exec JSON and /pub?output=csv)
         const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbw6M2j0dNBHKuzponpz3OZxh8ApzgcOLkM-9iA6UpLzz0Y9VopjJ4u2WFuqzktz815o/exec';
@@ -646,24 +664,31 @@
         ];
 
         const STAFF_POOL = [
-            { name: 'a', role: 'ผู้จัดการร้าน / คุมผลัดเช้า', defaultShift: 0, isMgr: true, isAsst: false },
-            { name: 'b', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดเช้า-บ่าย', defaultShift: 0, isMgr: false, isAsst: true },
-            { name: 'c', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดบ่าย', defaultShift: 1, isMgr: false, isAsst: true },
-            { name: 'd', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดดึก', defaultShift: 2, isMgr: false, isAsst: true },
-            { name: 'e', role: 'แคชเชียร์หลัก POS 1', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: 'f', role: 'All Café & อุ่นอาหาร', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: 'g', role: '7-Delivery & เติมสินค้า', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: 'h', role: 'แคชเชียร์ & Counter Service', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: 'i', role: 'เติมสินค้า & สต็อกเช้า', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: 'j', role: 'แคชเชียร์หลัก POS 1', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: 'k', role: '7-Delivery & ไรเดอร์บ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: 'l', role: 'All Café & อุ่นอาหารบ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: 'm', role: 'แคชเชียร์ POS 2 บ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: 'n', role: 'เติมสินค้า & จัดเรียงบ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: 'o', role: 'พนักงานประจำผลัดดึก', defaultShift: 2, isMgr: false, isAsst: false },
-            { name: 'p', role: 'พนักงานเสริมผลัดดึก / สต็อก', defaultShift: 2, isMgr: false, isAsst: false },
-            { name: 'q', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: 'r', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 1, isMgr: false, isAsst: false }
+            { name: '1', role: 'ผู้จัดการร้าน / คุมผลัดเช้า', defaultShift: 0, isMgr: true, isAsst: false },
+            { name: '2', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดเช้า-บ่าย', defaultShift: 0, isMgr: false, isAsst: true },
+            { name: '3', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดบ่าย', defaultShift: 1, isMgr: false, isAsst: true },
+            { name: '4', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดดึก', defaultShift: 2, isMgr: false, isAsst: true },
+            { name: '5', role: 'แคชเชียร์หลัก POS 1', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '6', role: 'All Café & อุ่นอาหาร', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '7', role: '7-Delivery & เติมสินค้า', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '8', role: 'แคชเชียร์ & Counter Service', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '9', role: 'เติมสินค้า & สต็อกเช้า', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '10', role: 'แคชเชียร์หลัก POS 1', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '11', role: '7-Delivery & ไรเดอร์บ่าย', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '12', role: 'All Café & อุ่นอาหารบ่าย', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '13', role: 'แคชเชียร์ POS 2 บ่าย', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '14', role: 'เติมสินค้า & จัดเรียงบ่าย', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '15', role: 'พนักงานประจำผลัดดึก', defaultShift: 2, isMgr: false, isAsst: false },
+            { name: '16', role: 'พนักงานเสริมผลัดดึก / สต็อก', defaultShift: 2, isMgr: false, isAsst: false },
+            { name: '17', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '18', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '19', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '20', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '21', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '22', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '23', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 0, isMgr: false, isAsst: false },
+            { name: '24', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 1, isMgr: false, isAsst: false },
+            { name: '25', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 2, isMgr: false, isAsst: false }
         ];
 
         const state = {
@@ -1515,6 +1540,82 @@
             renderRosterTable();
         }
 
+        function openEditEmpModal(empIdx) {
+            const emp = rosterPlan[empIdx];
+            const modal = document.getElementById('edit-emp-modal');
+            const body = document.getElementById('edit-emp-modal-body');
+            if (!emp || !modal || !body) return;
+
+            const shiftOptions = [
+                { val: 0, label: 'กะ 1 เช้า (06:00-15:00)' },
+                { val: 1, label: 'กะ 2 บ่าย (14:00-23:00)' },
+                { val: 2, label: 'กะ 3 ดึก (22:00-07:00)' },
+                { val: -1, label: 'OFF (วันหยุดประจำสัปดาห์)' }
+            ];
+
+            body.innerHTML = `
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        ชื่อพนักงานจริง <span class="text-[11px] font-normal text-slate-500">(${emp.role})</span>
+                    </label>
+                    <input type="text" id="modal-emp-name-input" value="${emp.name}" placeholder="พิมพ์ชื่อพนักงานจริง..."
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-seven-green">
+                </div>
+
+                <div>
+                    <div class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">จัดกะการทำงานทั้ง 7 วัน (จันทร์ - อาทิตย์)</div>
+                    <div class="space-y-2">
+                        ${state.dayFullNames.map((dName, dIdx) => `
+                            <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+                                <span class="text-xs font-bold ${dIdx >= 4 ? 'text-seven-red' : 'text-slate-700 dark:text-slate-200'}">วัน${dName}</span>
+                                <select id="modal-emp-day-${dIdx}" class="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs font-semibold">
+                                    ${shiftOptions.map(opt => `<option value="${opt.val}" ${emp.days[dIdx] === opt.val ? 'selected' : ''}>${opt.label}</option>`).join('')}
+                                </select>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <button onclick="closeEditEmpModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer">
+                        ยกเลิก
+                    </button>
+                    <button onclick="saveEditEmpModal(${empIdx})" class="px-4 py-2 rounded-xl bg-seven-green hover:bg-emerald-700 text-white text-xs font-bold shadow-sm cursor-pointer">
+                        <i class="fa-solid fa-check mr-1"></i>บันทึกข้อมูล
+                    </button>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                const inp = document.getElementById('modal-emp-name-input');
+                if (inp) { inp.focus(); inp.select(); }
+            }, 50);
+        }
+
+        function closeEditEmpModal() {
+            const modal = document.getElementById('edit-emp-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function saveEditEmpModal(empIdx) {
+            const emp = rosterPlan[empIdx];
+            if (!emp) return;
+            const nameInp = document.getElementById('modal-emp-name-input');
+            const trimmedName = nameInp ? nameInp.value.trim() : '';
+            if (trimmedName) {
+                emp.name = trimmedName;
+                if (STAFF_POOL[empIdx]) STAFF_POOL[empIdx].name = trimmedName;
+            }
+            for (let dIdx = 0; dIdx < 7; dIdx++) {
+                const sel = document.getElementById(`modal-emp-day-${dIdx}`);
+                if (sel) emp.days[dIdx] = Number(sel.value);
+            }
+            closeEditEmpModal();
+            renderRosterTable();
+            showToast(`บันทึกชื่อ "${emp.name}" และตารางกะเรียบร้อยแล้ว`);
+        }
+
         function renderRosterTable() {
             const theadRow = document.getElementById('roster-thead-row');
             const tbody = document.getElementById('roster-table-body');
@@ -1581,8 +1682,13 @@
                 return `
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                         <td class="py-2.5 px-3">
-                            <div class="font-bold text-slate-900 dark:text-white">${emp.name}</div>
-                            <div class="text-[10px] text-slate-500">${emp.role}</div>
+                            <button onclick="openEditEmpModal(${empIdx})" class="text-left group w-full cursor-pointer" title="คลิกเพื่อแก้ไขชื่อพนักงานและตารางกะ 7 วัน">
+                                <div class="font-bold text-slate-900 dark:text-white group-hover:text-seven-green flex items-center gap-1.5">
+                                    <span>${emp.name}</span>
+                                    <i class="fa-solid fa-pen-to-square text-[11px] text-slate-400 group-hover:text-seven-green"></i>
+                                </div>
+                                <div class="text-[10px] text-slate-500">${emp.role}</div>
+                            </button>
                         </td>
                         ${dayCells}
                         <td class="py-2.5 px-2 text-center font-bold text-[11px] ${workDays === 6 ? 'text-seven-green' : 'text-seven-orange'}">
