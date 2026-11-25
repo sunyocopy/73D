@@ -494,7 +494,7 @@
                     <button onclick="copyRosterForLine()" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
                         <i class="fa-brands fa-line mr-1"></i>คัดลอก LINE
                     </button>
-                    <button onclick="window.print()" class="px-2.5 py-1.5 rounded-xl bg-seven-orange hover:bg-orange-600 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
+                    <button onclick="triggerPrintRoster()" class="px-2.5 py-1.5 rounded-xl bg-seven-orange hover:bg-orange-600 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
                         <i class="fa-solid fa-print mr-1"></i>พิมพ์ / PDF
                     </button>
                     <button onclick="closePrintPreview()" class="px-2.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
@@ -1671,6 +1671,54 @@
         function closePrintPreview() {
             const modal = document.getElementById('print-modal');
             if (modal) modal.classList.add('hidden');
+        }
+
+        function triggerPrintRoster() {
+            const area = document.getElementById('print-preview-area');
+            if (!area) return;
+
+            try {
+                // สร้างหน้าต่างใหม่สำหรับพิมพ์ A4 แนวนอนโดยเฉพาะ (แก้ปัญหา window.print() ถูกบล็อกใน iFrame / Preview)
+                const printWin = window.open('', '_blank', 'width=1024,height=768');
+                if (printWin) {
+                    printWin.document.open();
+                    printWin.document.write(`
+                        <!DOCTYPE html>
+                        <html lang="th">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>พิมพ์ตารางเวร 7-Eleven</title>
+                            <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+                            <script src="https://cdn.tailwindcss.com"><\/script>
+                            <style>
+                                @page { size: A4 landscape; margin: 10mm; }
+                                body { font-family: 'Prompt', sans-serif; background: #fff; color: #000; padding: 12px; }
+                                table { width: 100%; border-collapse: collapse; }
+                                th, td { border: 1px solid #64748b !important; padding: 6px 8px; }
+                            </style>
+                        </head>
+                        <body>
+                            ${area.innerHTML}
+                            <script>
+                                window.onload = function() {
+                                    setTimeout(function() {
+                                        window.focus();
+                                        window.print();
+                                    }, 400);
+                                };
+                            <\/script>
+                        </body>
+                        </html>
+                    `);
+                    printWin.document.close();
+                    return;
+                }
+            } catch (e) {
+                // Fallback หากเบราว์เซอร์บล็อกป๊อบอัพ
+            }
+
+            // กรณีป๊อบอัพถูกบล็อก ให้สั่งพิมพ์หน้าปัจจุบันโดยตรง
+            window.print();
         }
 
         function copyRosterForLine() {
