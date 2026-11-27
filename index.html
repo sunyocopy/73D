@@ -52,7 +52,7 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200">
 
-    <!-- Top Navigation Header -->
+    <!-- Top Navigation & Sync Header -->
     <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
@@ -64,17 +64,21 @@
                         ระบบวางแผนและวิเคราะห์อัตรากำลังคน 7-Eleven
                     </h1>
                     <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                        วิเคราะห์ 6 สาขา • ทฤษฎีแถวคอย M/M/S • ชั่วโมงเร่งด่วน (Reaching Hours) &amp; จัดตารางเวร 7 วัน
+                        วิเคราะห์ 6 สาขา • ทฤษฎีแถวคอย M/M/S • ชั่วโมงเร่งด่วน &amp; ตารางเวรรายสัปดาห์ / รายเดือน 5 สัปดาห์
                     </p>
                 </div>
             </div>
 
-            <!-- Mode & Theme Toggle Controls -->
+            <!-- Live Sync & Theme Controls -->
             <div class="flex flex-wrap items-center gap-2">
-                <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px]">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span class="text-slate-600 dark:text-slate-300 font-medium">โหมดฐานข้อมูลในเครื่อง (6 สาขา)</span>
+                <div id="sync-status-pill" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px]">
+                    <span id="sync-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="sync-status-text" class="text-slate-600 dark:text-slate-300 font-medium">กำลังเชื่อมต่อ Google Sheets...</span>
                 </div>
+                <button onclick="syncLiveGoogleSheet(true)" id="btn-sync-live" class="px-3 py-1.5 rounded-xl bg-seven-green hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer" title="ดึงข้อมูลยอดขาย ลูกค้า และรายชื่อพนักงานล่าสุด">
+                    <i id="sync-icon" class="fa-solid fa-rotate"></i>
+                    <span>ซิงค์ข้อมูลสด</span>
+                </button>
                 <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer" title="สลับโหมดมืด/สว่าง">
                     <i class="fa-solid fa-circle-half-stroke"></i>
                 </button>
@@ -99,7 +103,7 @@
                     <i class="fa-solid fa-store text-seven-orange mr-1.5"></i>เลือกสาขาที่ต้องการจำลอง (6 สาขาในสถานีบริการน้ำมัน)
                 </div>
                 <div id="active-branch-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-seven-green dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                    สาขา 5258 (NL) • พนักงาน 17 คน
+                    สาขา 10666 (NP) • พนักงาน 12 คน
                 </div>
             </div>
             <div id="branch-pills" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -122,7 +126,6 @@
                     <p class="text-[11px] text-slate-500 dark:text-slate-400">ปรับแก้ตัวเลขได้ทันที ระบบอัปเดตทุกตารางอัตโนมัติ</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <!-- Shift Mode Tabs for KPI Wait Time -->
                     <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs">
                         <button onclick="setShiftView(0)" id="mode-tab-0" class="px-2.5 py-1 rounded-xl font-bold transition cursor-pointer">กะเช้า</button>
                         <button onclick="setShiftView(1)" id="mode-tab-1" class="px-2.5 py-1 rounded-xl font-bold transition cursor-pointer">กะบ่าย</button>
@@ -140,9 +143,9 @@
                     <div class="flex items-center justify-between gap-2">
                         <div>
                             <div class="font-bold text-slate-800 dark:text-slate-200">ฐานลูกค้าเฉลี่ยจริง (คน/วัน)</div>
-                            <div id="weekly-cust-helper" class="text-[11px] text-seven-green font-medium">รวมสัปดาห์: 7,294 คน</div>
+                            <div id="weekly-cust-helper" class="text-[11px] text-seven-green font-medium">รวมสัปดาห์: 7,210 คน</div>
                         </div>
-                        <input type="number" id="input-total-cust" min="100" max="5000" value="1042" oninput="onParamChange()" class="w-24 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-right font-bold text-sm">
+                        <input type="number" id="input-total-cust" min="100" max="5000" value="1030" oninput="onParamChange()" class="w-24 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-right font-bold text-sm">
                     </div>
 
                     <!-- 7 Days Traffic % Selector -->
@@ -159,12 +162,12 @@
                     <!-- Actual Working & Total Headcount -->
                     <div class="grid grid-cols-2 gap-2.5 pt-1">
                         <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                            <div class="text-[11px] text-slate-500 dark:text-slate-400">คนมาปฏิบัติงานจริงวันนี้ (คน)</div>
-                            <input type="number" id="input-actual-staff" min="1" max="18" value="14" readonly class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 font-bold text-right text-seven-green cursor-not-allowed" title="คำนวณอัตโนมัติจากตารางที่ 3">
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400">คนเข้ากะจริงวันนี้ (คน)</div>
+                            <input type="number" id="input-actual-staff" min="1" max="18" value="12" oninput="onParamChange()" class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
                         </div>
                         <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
                             <div class="text-[11px] text-slate-500 dark:text-slate-400">พนักงานทั้งหมด (สูงสุด 18 คน)</div>
-                            <input type="number" id="input-max-headcount" min="6" max="18" value="17" oninput="onHeadcountInput(this.value)" class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
+                            <input type="number" id="input-max-headcount" min="6" max="18" value="12" oninput="onHeadcountInput(this.value)" class="mt-1 w-full px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
                         </div>
                     </div>
                 </div>
@@ -178,15 +181,15 @@
                         </div>
                         <div class="grid grid-cols-3 gap-2">
                             <div class="p-2 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                                <div class="text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold">กะ 1 เช้า</div>
-                                <input type="number" id="input-pct-s1" min="0" max="100" value="44" oninput="onParamChange()" class="mt-0.5 w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 font-bold text-right">
+                                <div class="text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold">กะ 1 เช้า (06:30-15:30)</div>
+                                <input type="number" id="input-pct-s1" min="0" max="100" value="45" oninput="onParamChange()" class="mt-0.5 w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 font-bold text-right">
                             </div>
                             <div class="p-2 rounded-xl bg-orange-50/70 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
-                                <div class="text-[10px] text-orange-800 dark:text-orange-300 font-semibold">กะ 2 บ่าย</div>
-                                <input type="number" id="input-pct-s2" min="0" max="100" value="44" oninput="onParamChange()" class="mt-0.5 w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 font-bold text-right">
+                                <div class="text-[10px] text-orange-800 dark:text-orange-300 font-semibold">กะ 2 บ่าย (13:30-22:30)</div>
+                                <input type="number" id="input-pct-s2" min="0" max="100" value="43" oninput="onParamChange()" class="mt-0.5 w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 font-bold text-right">
                             </div>
                             <div class="p-2 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800">
-                                <div class="text-[10px] text-indigo-800 dark:text-indigo-300 font-semibold">กะ 3 ดึก</div>
+                                <div class="text-[10px] text-indigo-800 dark:text-indigo-300 font-semibold">กะ 3 ดึก (22:00-07:00)</div>
                                 <input type="number" id="input-pct-s3" min="0" max="100" value="12" oninput="onParamChange()" class="mt-0.5 w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 font-bold text-right">
                             </div>
                         </div>
@@ -208,7 +211,7 @@
                         </div>
                         <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                             <span class="text-[11px] font-medium">7-Delivery (บิล/วัน)</span>
-                            <input type="number" id="input-delivery" min="0" max="500" value="54" oninput="onParamChange()" class="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
+                            <input type="number" id="input-delivery" min="0" max="500" value="37" oninput="onParamChange()" class="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold text-right">
                         </div>
                         <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                             <span class="text-[11px] font-medium">งานหลังร้าน/เติมของ (%)</span>
@@ -236,11 +239,11 @@
                     </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span id="hourly-source-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                        ค่าจำลอง Mockup
+                    <span id="hourly-source-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                        ข้อมูลจริงจากใบสรุป POS
                     </span>
                     <span id="hourly-peak-summary" class="px-3 py-1 rounded-full text-xs font-bold bg-orange-50 dark:bg-orange-950/50 text-seven-orange border border-orange-200 dark:border-orange-800">
-                        ช่วงพีคสูงสุด: 08:00 - 09:59 น.
+                        ช่วงพีคสูงสุด: 20:00 - 21:59 น.
                     </span>
                 </div>
             </div>
@@ -258,11 +261,11 @@
                         ตารางที่ 1: วิเคราะห์อัตรากำลังคนและแถวคอย M/M/S รายกะ (วันปกติ 3 ผลัด)
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        เปรียบเทียบจำนวนคนที่จัดจริงจากตารางที่ 3 กับเกณฑ์แนะนำรายกะและภาระงานช่วงพีค
+                        เปรียบเทียบจำนวนคนที่เข้ากะจริงกับเกณฑ์ที่แนะนำในแต่ละกะ พร้อมวิเคราะห์ความยาวแถวคอยช่วงพีค (POS)
                     </p>
                 </div>
                 <span id="table1-day-label" class="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-seven-green dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
-                    ข้อมูลจำลองวันอังคาร
+                    วันอังคาร
                 </span>
             </div>
 
@@ -334,10 +337,10 @@
                 <div>
                     <h2 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                         <i class="fa-solid fa-calendar-week text-seven-green"></i>
-                        <span>ตารางที่ 3: จำลองรายชื่อพนักงานและการจัดกะ + สลับวันหยุดตามภาระงาน (7 วัน จันทร์ - อาทิตย์)</span>
+                        <span>ตารางที่ 3: ตารางจัดกะและสลับวันหยุดรายสัปดาห์ (สัปดาห์ที่ 1: 7 วัน จันทร์ - อาทิตย์)</span>
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        คลิกที่ช่องกะของพนักงานแต่ละคนเพื่อสลับกะด้วยตนเอง • จัดคนลงกะเต็มกำลังช่วง ศุกร์–อาทิตย์
+                        คลิกที่ชื่อพนักงานเพื่อแก้ชื่อ/ตำแหน่ง/ประเภท (ทวิภาคี &lt;18 / P/T4) • คลิกช่องกะเพื่อสลับกะ (อัปเดตตารางที่ 4 ทันที)
                     </p>
                 </div>
 
@@ -346,12 +349,12 @@
                     <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
                         <span class="font-semibold text-slate-600 dark:text-slate-300">พนักงานทั้งหมด (สูงสุด 18):</span>
                         <button onclick="adjustHeadcount(-1)" class="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 font-bold shadow-xs cursor-pointer">-</button>
-                        <span id="roster-headcount-badge" class="px-2 font-bold text-sm text-seven-green dark:text-emerald-400">17</span>
+                        <span id="roster-headcount-badge" class="px-2 font-bold text-sm text-seven-green dark:text-emerald-400">12</span>
                         <button onclick="adjustHeadcount(1)" class="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 font-bold shadow-xs cursor-pointer">+</button>
                         <span class="text-slate-500">คน</span>
                     </div>
 
-                    <button onclick="generateSmartRoster(); refreshAll(); showToast('จัดตารางเวรและวันหยุดใหม่เรียบร้อยแล้ว');" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">
+                    <button onclick="generateSmartRoster(); refreshAll(); showToast('จัดตารางเวรรายสัปดาห์และอัปเดตตารางที่ 4 เรียบร้อยแล้ว');" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">
                         <i class="fa-solid fa-wand-magic-sparkles mr-1 text-seven-orange"></i>จัดอัตโนมัติ
                     </button>
 
@@ -364,13 +367,14 @@
 
             <!-- Legend -->
             <div class="flex flex-wrap items-center gap-2 mb-3 text-[11px]">
-                <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 font-bold">กะ 1 เช้า (06:00-15:00)</span>
-                <span class="px-2.5 py-1 rounded-lg bg-orange-100 text-orange-900 font-bold">กะ 2 บ่าย (14:00-23:00)</span>
-                <span class="px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-900 font-bold">กะ 3 ดึก (22:00-07:00)</span>
-                <span class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold">OFF (วันหยุดประจำสัปดาห์)</span>
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 font-bold">กะ 1 เช้า (ช): 06:30–15:30</span>
+                <span class="px-2.5 py-1 rounded-lg bg-orange-100 text-orange-900 font-bold">กะ 2 บ่าย (บ): 13:30–22:30</span>
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-900 font-bold">กะ 3 ดึก (ด): 22:00–07:00</span>
+                <span class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold">OFF / H (วันหยุดประจำสัปดาห์)</span>
+                <span class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold border border-amber-300">p/t4 (เว้นค่าว่าง • ไม่นับในกะ)</span>
             </div>
 
-            <!-- Roster Alert / OT Recommendation Box -->
+            <!-- Roster Alert Box -->
             <div id="roster-alert-box" class="mb-3"></div>
 
             <!-- Roster Table -->
@@ -389,27 +393,78 @@
                     </tfoot>
                 </table>
             </div>
+        </section>
 
-            <!-- Shift Rules Note Box -->
+        <!-- Table 4: 5-Week Continuous Monthly Roster (35 Days) -->
+        <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-seven-orange"></i>
+                        <span>ตารางที่ 4: ตารางจัดกะต่อเนื่องรายเดือน (รวม 5 สัปดาห์ / 35 วัน)</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        สัปดาห์ที่ 1 (วันที่ 1–7) ดึงจากตารางที่ 3 แบบตรงกัน 100% • สัปดาห์ที่ 2–5 จัดต่อเนื่องตามกฎแรงงานและหมุนเวียนกะดึกอย่างยุติธรรม
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs border border-slate-200 dark:border-slate-700">
+                        <button onclick="setMonthlyMode('rotate')" id="monthly-mode-rotate" class="px-3 py-1.5 rounded-xl font-bold transition cursor-pointer">
+                            แบบที่ 2: หมุนเวียนต่อเนื่อง 4 สัปดาห์ (แนะนำ)
+                        </button>
+                        <button onclick="setMonthlyMode('repeat')" id="monthly-mode-repeat" class="px-3 py-1.5 rounded-xl font-bold transition cursor-pointer">
+                            แบบที่ 1: ทำซ้ำตารางรายสัปดาห์
+                        </button>
+                    </div>
+
+                    <button onclick="resetMonthlyPlan()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">
+                        <i class="fa-solid fa-rotate-left mr-1"></i>รีเซ็ตแผนต่อเนื่อง 5 สัปดาห์
+                    </button>
+
+                    <button onclick="openMonthlyPrintPreview()" class="px-3.5 py-2 rounded-xl bg-seven-green hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-print"></i>
+                        <span>พิมพ์ตาราง 5 สัปดาห์ / ดูตัวอย่าง</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mode Description Banner -->
+            <div id="monthly-mode-desc" class="mb-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300"></div>
+
+            <!-- Monthly Alert Box -->
+            <div id="monthly-alert-box" class="mb-3"></div>
+
+            <!-- 35-Day Scrollable Table -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr id="monthly-week-header" class="text-white"></tr>
+                        <tr id="monthly-day-header" class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-b border-slate-300 dark:border-slate-700"></tr>
+                    </thead>
+                    <tbody id="monthly-table-body" class="divide-y divide-slate-200 dark:divide-slate-800"></tbody>
+                    <tfoot id="monthly-tfoot" class="bg-slate-100 dark:bg-slate-800/90 font-bold border-t-2 border-slate-300 dark:border-slate-600"></tfoot>
+                </table>
+            </div>
+
+            <!-- Standard Rules Note Box -->
             <div class="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
                 <div class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1">
                     <i class="fa-solid fa-clipboard-check text-seven-green"></i>
-                    <span>หมายเหตุเงื่อนไขการจัดผลัดและผู้รับผิดชอบประจำกะ:</span>
+                    <span>กฎการจัดตารางทำงานและตารางต่อเนื่อง 5 สัปดาห์ (มาตรฐานของระบบ):</span>
                 </div>
                 <ul class="list-disc list-inside space-y-1 text-[11px] sm:text-xs leading-relaxed">
-                    <li>ต้องมี<strong>ผู้ช่วยผู้จัดการประจำครบทุกผลัด</strong> (กะเช้า / กะบ่าย / กะดึก) ตลอดทั้ง 7 วัน เพื่อดูแลการเปิด-ปิดรอบบัญชี รับส่งสินค้า ตรวจเช็กสต็อก และแก้ไขปัญหาเฉพาะหน้าหน้าร้าน</li>
-                    <li><strong>ผลัดเช้า (กะที่ 1 เวลา 06:00 - 15:00 น.)</strong> สามารถให้ <strong>ผู้จัดการร้าน (ผจก.)</strong> อยู่ปฏิบัติหน้าที่แทนผู้ช่วยผู้จัดการได้ (ในวันที่ผู้ช่วยฯ กะเช้าหยุดประจำสัปดาห์)</li>
-                    <li><strong>วันหยุดของผู้จัดการร้าน (ผจก.)</strong> กำหนดให้หยุดได้ <strong>เฉพาะวันเสาร์ (ส) หรือ วันอาทิตย์ (อา) เท่านั้น</strong> เนื่องจากวันธรรมดา (จันทร์–ศุกร์) ผจก. ต้องอยู่บริหารจัดการเงินสด ฝากเงินธนาคาร และเคลียร์เอกสารบัญชี</li>
-                    <li><strong>จัดผู้ช่วยฯ ผลัดดึกเพียง 1 คนต่อคืน:</strong> ผลัดดึก (22:00 - 07:00 น.) มีผู้ช่วยฯ ประจำเพียง 1 คนเท่านั้น (ไม่ให้ผู้ช่วยฯ 2 คนอยู่ซ้อนกันในผลัดดึก) โดยผู้ช่วยฯ ผลัดเช้า-บ่ายจะหมุนเวียนมาช่วยคุมผลัดดึกเฉพาะวันที่ผู้ช่วยฯ ผลัดดึกหยุดประจำสัปดาห์ แล้วจึงให้หยุดพัก (OFF) ในวันถัดไป</li>
-                    <li class="text-seven-red dark:text-rose-400 font-semibold"><strong>กฎความปลอดภัยผลัดดึก (ห้ามอยู่คนเดียว):</strong> ผลัดดึก (22:00 - 07:00 น.) <strong>ห้ามมีพนักงานอยู่เพียง 1 คนโดยเด็ดขาด ต้องมีผู้ปฏิบัติงานรวมอย่างน้อย 2 คนทุกคืน</strong> (ผู้ช่วยฯ 1 คน + พนักงานประจำกะดึกอย่างน้อย 1 คน) เพื่อความปลอดภัยของพนักงานและร้าน</li>
-                    <li class="text-blue-700 dark:text-blue-300 font-semibold"><strong>กฎการเกลี่ยกำลังคนอัตโนมัติ &amp; คำแนะนำ OT:</strong> ระบบจะเกลี่ยคนระหว่างกะเช้าและกะบ่ายเฉพาะเมื่อมี <strong>กะที่คนเกินเกณฑ์แนะนำ</strong> และ <strong>กะที่คนขาดเกณฑ์แนะนำ</strong> เกิดขึ้นพร้อมกันในวันนั้นเท่านั้น หากไม่สามารถเกลี่ยได้ตามกฎพักกะ จะคงตารางเดิมไว้และแนะนำให้จัดพนักงานทำ <strong>OT ช่วงพีคเย็น (15:00–19:00 น.)</strong></li>
-                    <li>พนักงานทุกคน (รวม ผจก. และผู้ช่วยฯ) ทำงานสัปดาห์ละ 6 วัน และสลับหยุดประจำสัปดาห์คนละ 1 วัน โดยผู้ช่วยฯ และพนักงานทั่วไปเน้นหยุดช่วงวันจันทร์–พฤหัสบดี เพื่อให้วันศุกร์–อาทิตย์มีกำลังคนเต็มประสิทธิภาพ</li>
-                    <li><strong>กฎข้อห้ามสำคัญ (ห้ามควงกะข้ามคืน &amp; การพักหลังออกกะดึก):</strong> พนักงานและผู้ช่วยฯ ที่เข้า <strong>กะ 3 ดึก (22:00 - 07:00 น.)</strong> ห้ามเข้า <strong>กะ 1 เช้า (06:00 - 15:00 น.)</strong> ในวันถัดไปโดยเด็ดขาด และหลีกเลี่ยงการต่อ <strong>กะ 2 บ่าย (14:00 - 23:00 น.)</strong> ทันทีหลังออกกะดึก (ให้ยืน กะ 3 ดึกต่อเนื่อง หรือจัดเป็น วันหยุด (OFF) ในวันถัดไปเพื่อให้พนักงานได้พักผ่อนเต็มที่)</li>
+                    <li><strong>เวลาทำงาน 3 กะ:</strong> กะ 1 เช้า (ช) <code>06:30–15:30 น.</code> | กะ 2 บ่าย (บ) <code>13:30–22:30 น.</code> | กะ 3 ดึก (ด) <code>22:00–07:00 น.</code> | <code>OFF / H</code> วันหยุดประจำสัปดาห์</li>
+                    <li><strong>ผู้จัดการร้าน (ผจก.):</strong> อยู่ <strong>กะเช้า</strong> อย่างเดียว และหยุดสัปดาห์ละ 1 วัน (ค่าเริ่มต้นวันเสาร์)</li>
+                    <li><strong>นักศึกษาฝึกงาน ทวิภาคี (&lt; 18 ปี):</strong> ลงได้เฉพาะ <strong>กะเช้า (จันทร์–ศุกร์)</strong> และ <strong>หยุดเสาร์–อาทิตย์ ทุกสัปดาห์</strong> ห้ามลงกะบ่าย/ดึก และห้ามทำ OT</li>
+                    <li><strong>พนักงาน p/t4:</strong> แสดงเฉพาะรายชื่อต่อท้ายตาราง เว้นช่องกะเป็นค่าว่างสนิท ไม่นับรวมในโครงสร้างกำลังคนหลัก (FTE = 0)</li>
+                    <li><strong>ผู้ช่วยผู้จัดการร้าน (ผู้ช่วยฯ):</strong> เน้นกะดึกก่อน (<strong>ดึก → บ่าย → เช้า</strong>) และต้องมีผู้ช่วยฯ คุมกะดึกอย่างน้อย 1 คนทุกคืน (ร้านที่มีผู้ช่วยฯ 2 คน: คนที่ 1 ลงดึก 6 คืน + หยุด 1 วัน, คนที่ 2 ลงดึกแทนคืนที่คนที่ 1 หยุด → หยุดพักวันถัดไปทันที → อีก 5 วันที่เหลือลงกะบ่ายทั้งหมด)</li>
+                    <li class="text-seven-red dark:text-rose-400 font-semibold"><strong>กฎความปลอดภัยกะดึก &amp; ความเท่าเทียม:</strong> กะดึกต้องมีพนักงานอย่างน้อย 2 คนทุกคืน, <strong>ห้ามควงกะข้ามคืน (ดึก → เช้า)</strong>, พนักงานหลักทุกคนได้หยุดสัปดาห์ละ 1 วันเท่ากัน (ครบ 5 สัปดาห์หยุดคนละ 5 วัน) และทำงานติดต่อกันไม่เกิน 6 วันติด</li>
                 </ul>
             </div>
         </section>
 
-        <!-- Calculation Standards & Reference Benchmarks Note Box (Separate Section) -->
+        <!-- Calculation Standards & Reference Benchmarks Note Box -->
         <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5">
             <h3 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2 mb-3">
                 <i class="fa-solid fa-book-open-reader text-seven-orange"></i>
@@ -418,10 +473,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                 <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                     <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-slate-900 dark:text-white">1. เวลาคิดเงินแคชเชียร์ (POS)</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">อ้างอิงทฤษฎี M/M/S</span>
+                        <span class="font-bold text-slate-900 dark:text-white">1. ทฤษฎีแถวคอย M/M/S (POS)</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">มาตรฐานวิชาการ</span>
                     </div>
-                    <p class="text-slate-700 dark:text-slate-300">ใช้เวลาเฉลี่ย <strong>1.0 นาที / ลูกค้า 1 คน</strong> (μ = 60 คน/ชม./เครื่อง) อ้างอิงทฤษฎีแถวคอย <strong>M/M/S (Queueing Theory)</strong> สำหรับร้านสะดวกซื้อ 3 ช่องบริการ (S=3)</p>
+                    <p class="text-slate-700 dark:text-slate-300">ใช้เวลาคิดเงินเฉลี่ย <strong>1.0 นาที / ลูกค้า 1 คน</strong> (μ = 60 คน/ชม./เครื่อง) อ้างอิงทฤษฎีแถวคอย <strong>M/M/S</strong> สำหรับ 3 ช่องบริการ (S = 3)</p>
                 </div>
 
                 <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
@@ -443,25 +498,21 @@
                 <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                     <div class="flex items-center justify-between mb-1">
                         <span class="font-bold text-slate-900 dark:text-white">4. ชั่วโมงเร่งด่วน (Reaching Hours)</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">อ้างอิงทฤษฎี + POS</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">ข้อมูลจริงทั้ง 6 สาขา</span>
                     </div>
-                    <p class="text-slate-700 dark:text-slate-300">ช่วงลูกค้าหนาแน่น 50–80+ คน/ชม. ต้องเปิดครบ 3 เครื่อง POS (S=3) ใช้ข้อมูลจริงราย 2 ชม. สำหรับสาขา <strong>15313 (NS)</strong> และค่า Mockup สำหรับอีก 5 สาขา</p>
+                    <p class="text-slate-700 dark:text-slate-300">ช่วงลูกค้าหนาแน่น 50–150+ คน/ชม. ต้องเปิดครบ 3 เครื่อง POS (S = 3) ใช้ข้อมูลจริงราย 2 ชม. ครบทั้ง <strong>6 สาขา</strong> จากใบสรุป POS</p>
                 </div>
 
                 <div class="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
                     <div class="flex items-center justify-between mb-1">
                         <span class="font-bold text-slate-900 dark:text-white">5. งานหลังร้าน &amp; เติมสินค้า</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white">ค่าม็อกอัพ (Mockup)</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white">เกณฑ์มาตรฐานร้าน</span>
                     </div>
                     <p class="text-slate-700 dark:text-slate-300">กำหนดสัดส่วน <strong>30%</strong> ของเวลาปฏิบัติงานรวม สำหรับเติมสินค้า ตรวจรับของลงสต็อก และทำความสะอาด</p>
                 </div>
 
-                <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-slate-900 dark:text-white">6. เพดานกำลังคน &amp; เผื่อวันหยุด</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">สูงสุด 18 คน/สาขา</span>
-                    </div>
-                    <p id="sales-quota-standard-text" class="text-slate-700 dark:text-slate-300">คุมเพดานพนักงานสูงสุด <strong>18 คน/สาขา</strong> (ทำงาน 6 วัน / หยุด 1 วันต่อสัปดาห์ เผื่อวันหยุด +20%)</p>
+                <div id="sales-quota-standard-card" class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                    <!-- Populated dynamically with branch sales FTE quota -->
                 </div>
             </div>
         </section>
@@ -470,14 +521,14 @@
 
     <!-- Print Preview Modal (Mobile-Friendly) -->
     <div id="print-modal" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-xs overflow-y-auto p-1.5 sm:p-6">
-        <div class="max-w-5xl mx-auto bg-white text-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+        <div class="max-w-6xl mx-auto bg-white text-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
             <div class="no-print px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
                 <div class="font-bold text-xs sm:text-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-eye text-emerald-400"></i>
-                    <span>ตัวอย่างก่อนพิมพ์ (Print Preview)</span>
+                    <span id="print-modal-title">ตัวอย่างก่อนพิมพ์ (Print Preview)</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <button onclick="copyRosterForLine()" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
+                    <button onclick="copyActivePrintForLine()" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
                         <i class="fa-brands fa-line mr-1"></i>คัดลอก LINE
                     </button>
                     <button onclick="triggerPrintRoster()" class="px-2.5 py-1.5 rounded-xl bg-seven-orange hover:bg-orange-600 text-white text-[11px] sm:text-xs font-bold cursor-pointer">
@@ -500,7 +551,7 @@
             <div class="px-4 py-3 bg-seven-green text-white flex items-center justify-between">
                 <div class="font-bold text-sm flex items-center gap-2">
                     <i class="fa-solid fa-user-pen"></i>
-                    <span>แก้ไขชื่อพนักงานและตารางกะ 7 วัน</span>
+                    <span>แก้ไขชื่อพนักงาน ตำแหน่ง และตารางกะสัปดาห์ที่ 1</span>
                 </div>
                 <button onclick="closeEditEmpModal()" class="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-xs font-bold cursor-pointer">
                     <i class="fa-solid fa-xmark"></i>
@@ -513,6 +564,9 @@
     </div>
 
     <script>
+        // ลิงก์ Google Apps Script สำหรับดึงข้อมูลสด (ยอดขาย, ลูกค้า, รายชื่อพนักงานแยกสาขา)
+        const LIVE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxVVFbfNLkzX51gsKQLk8H7wdcIB8R2ag6JTWbWAHs_wFZ7ETaxCFTQTQL2qLGmXFY_/exec';
+
         // สูตรเกณฑ์กำลังคนตามยอดขายของบริษัท (FTE: .0 = ประจำ 9 ชม., .5 = พาร์ทไทม์ 4 ชม., สูงสุด 18 คน/สาขา)
         function calcSalesQuotaFTE(dailySales) {
             const sales = Number(dailySales) || 0;
@@ -534,36 +588,19 @@
             };
         }
 
-        // 6 Branches Data (with real dailySales, real 7-Delivery orders & 15313 real 2-hour traffic)
+        // 6 Branches Data (ลำดับตายตัว: 10666, 7397, 8148, 5258, 13284, 15313 + ข้อมูลราย 2 ชม. จริงทั้ง 6 สาขา)
+        const BRANCH_ORDER = ['10666', '7397', '8148', '5258', '13284', '15313'];
+
         const BRANCH_DATA = {
-            '5258': {
-                code: '5258',
-                name: '5258 (NL)',
-                dailySales: 86808,
-                totalCustomers: 1042,
-                dayPcts: [12, 12, 12, 13, 15, 18, 18],
-                shiftPcts: [44, 44, 12],
-                actualStaff: 14,
-                maxHeadcount: calcSalesQuotaFTE(86808).totalHeads,
-                serviceTimeMin: 1.0,
-                posCount: 3,
-                cafePct: 25,
-                deliveryOrders: 54,
-                nonPosPct: 30,
-                bufferPct: 20,
-                festMult: 1.8,
-                isHourlyReal: true,
-                hourlyCust2Hr: [140, 123, 102, 98, 112, 132, 118, 104, 53, 23, 28, 41]
-            },
             '10666': {
                 code: '10666',
                 name: '10666 (NP)',
                 dailySales: 95672,
-                totalCustomers: 1007,
+                totalCustomers: 1030,
                 dayPcts: [12, 12, 12, 13, 15, 18, 18],
                 shiftPcts: [45, 43, 12],
-                actualStaff: 14,
-                maxHeadcount: calcSalesQuotaFTE(95672).totalHeads,
+                actualStaff: 12,
+                maxHeadcount: 12,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 25,
@@ -572,17 +609,19 @@
                 bufferPct: 20,
                 festMult: 1.8,
                 isHourlyReal: true,
-                hourlyCust2Hr: [111, 136, 112, 154, 286, 241, 247, 305, 114, 24, 17, 48]
+                hourlyCust2Hr: [111, 136, 112, 154, 286, 241, 247, 305, 114, 24, 17, 48],
+                liveStaff: [],
+                livePT4: []
             },
             '7397': {
                 code: '7397',
                 name: '7397 (VP)',
                 dailySales: 89395,
-                totalCustomers: 840,
+                totalCustomers: 938,
                 dayPcts: [13, 12, 12, 13, 15, 18, 17],
                 shiftPcts: [49, 38, 13],
-                actualStaff: 13,
-                maxHeadcount: calcSalesQuotaFTE(89395).totalHeads,
+                actualStaff: 11,
+                maxHeadcount: 11,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 25,
@@ -591,17 +630,19 @@
                 bufferPct: 20,
                 festMult: 1.7,
                 isHourlyReal: true,
-                hourlyCust2Hr: [149, 115, 114, 103, 110, 112, 73, 80, 30, 21, 13, 39]
+                hourlyCust2Hr: [149, 115, 114, 103, 110, 112, 73, 80, 30, 21, 13, 39],
+                liveStaff: [],
+                livePT4: []
             },
             '8148': {
                 code: '8148',
                 name: '8148 (PP)',
                 dailySales: 74443,
-                totalCustomers: 815,
+                totalCustomers: 880,
                 dayPcts: [13, 12, 12, 13, 15, 18, 17],
                 shiftPcts: [48, 39, 13],
-                actualStaff: 13,
-                maxHeadcount: calcSalesQuotaFTE(74443).totalHeads,
+                actualStaff: 12,
+                maxHeadcount: 12,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 25,
@@ -610,17 +651,40 @@
                 bufferPct: 20,
                 festMult: 1.7,
                 isHourlyReal: true,
-                hourlyCust2Hr: [100, 102, 68, 101, 89, 73, 84, 32, 25, 6, 22, 38]
+                hourlyCust2Hr: [100, 102, 68, 101, 89, 73, 84, 32, 25, 6, 22, 38],
+                liveStaff: [],
+                livePT4: []
+            },
+            '5258': {
+                code: '5258',
+                name: '5258 (NL)',
+                dailySales: 86808,
+                totalCustomers: 1056,
+                dayPcts: [12, 12, 12, 13, 15, 18, 18],
+                shiftPcts: [44, 44, 12],
+                actualStaff: 12,
+                maxHeadcount: 12,
+                serviceTimeMin: 1.0,
+                posCount: 3,
+                cafePct: 25,
+                deliveryOrders: 54,
+                nonPosPct: 30,
+                bufferPct: 20,
+                festMult: 1.8,
+                isHourlyReal: true,
+                hourlyCust2Hr: [140, 123, 102, 98, 112, 132, 118, 104, 53, 23, 28, 41],
+                liveStaff: [],
+                livePT4: []
             },
             '13284': {
                 code: '13284',
                 name: '13284 (SP)',
                 dailySales: 71563,
-                totalCustomers: 766,
+                totalCustomers: 882,
                 dayPcts: [13, 13, 12, 13, 15, 17, 17],
                 shiftPcts: [44, 44, 12],
-                actualStaff: 12,
-                maxHeadcount: calcSalesQuotaFTE(71563).totalHeads,
+                actualStaff: 13,
+                maxHeadcount: 13,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 20,
@@ -629,17 +693,19 @@
                 bufferPct: 20,
                 festMult: 1.7,
                 isHourlyReal: true,
-                hourlyCust2Hr: [109, 104, 95, 102, 123, 117, 97, 75, 16, 23, 10, 11]
+                hourlyCust2Hr: [109, 104, 95, 102, 123, 117, 97, 75, 16, 23, 10, 11],
+                liveStaff: [],
+                livePT4: []
             },
             '15313': {
                 code: '15313',
                 name: '15313 (NS)',
                 dailySales: 70586,
-                totalCustomers: 762,
+                totalCustomers: 712,
                 dayPcts: [13, 13, 12, 13, 15, 17, 17],
                 shiftPcts: [56, 32, 12],
                 actualStaff: 12,
-                maxHeadcount: calcSalesQuotaFTE(70586).totalHeads,
+                maxHeadcount: 12,
                 serviceTimeMin: 1.0,
                 posCount: 3,
                 cafePct: 20,
@@ -648,7 +714,9 @@
                 bufferPct: 20,
                 festMult: 1.7,
                 isHourlyReal: true,
-                hourlyCust2Hr: [100, 102, 88, 101, 89, 73, 84, 32, 25, 8, 22, 38]
+                hourlyCust2Hr: [100, 102, 88, 101, 89, 73, 84, 32, 25, 8, 22, 38],
+                liveStaff: [],
+                livePT4: []
             }
         };
 
@@ -658,50 +726,126 @@
             '22:00 - 23:59', '00:00 - 01:59', '02:00 - 03:59', '04:00 - 05:59'
         ];
 
+        const THAI_PUBLIC_HOLIDAYS_2026_2027 = {
+            '2026-01-01': 'วันขึ้นปีใหม่',
+            '2026-03-03': 'วันมาฆบูชา',
+            '2026-04-06': 'วันจักรี',
+            '2026-04-13': 'วันสงกรานต์',
+            '2026-04-14': 'วันสงกรานต์',
+            '2026-04-15': 'วันสงกรานต์',
+            '2026-05-01': 'วันแรงงานแห่งชาติ',
+            '2026-05-04': 'วันฉัตรมงคล',
+            '2026-05-31': 'วันวิสาขบูชา',
+            '2026-07-28': 'วันเฉลิมพระชนมพรรษา ร.10',
+            '2026-07-29': 'วันอาสาฬหบูชา',
+            '2026-07-30': 'วันเข้าพรรษา',
+            '2026-08-12': 'วันแม่แห่งชาติ',
+            '2026-10-13': 'วันนวมินทรมหาราช',
+            '2026-10-23': 'วันปิยมหาราช',
+            '2026-12-05': 'วันพ่อแห่งชาติ',
+            '2026-12-10': 'วันรัฐธรรมนูญ',
+            '2026-12-31': 'วันสิ้นปี',
+            '2027-01-01': 'วันขึ้นปีใหม่',
+            '2027-02-21': 'วันมาฆบูชา',
+            '2027-04-06': 'วันจักรี',
+            '2027-04-13': 'วันสงกรานต์',
+            '2027-04-14': 'วันสงกรานต์',
+            '2027-04-15': 'วันสงกรานต์',
+            '2027-05-01': 'วันแรงงานแห่งชาติ',
+            '2027-05-04': 'วันฉัตรมงคล',
+            '2027-05-20': 'วันวิสาขบูชา',
+            '2027-07-18': 'วันอาสาฬหบูชา',
+            '2027-07-19': 'วันเข้าพรรษา',
+            '2027-07-28': 'วันเฉลิมพระชนมพรรษา ร.10',
+            '2027-08-12': 'วันแม่แห่งชาติ',
+            '2027-10-13': 'วันนวมินทรมหาราช',
+            '2027-10-23': 'วันปิยมหาราช',
+            '2027-12-05': 'วันพ่อแห่งชาติ',
+            '2027-12-10': 'วันรัฐธรรมนูญ',
+            '2027-12-31': 'วันสิ้นปี'
+        };
+
         const STAFF_POOL = [
-            { name: '1', role: 'ผู้จัดการร้าน / คุมผลัดเช้า', defaultShift: 0, isMgr: true, isAsst: false },
-            { name: '2', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดเช้า-บ่าย', defaultShift: 0, isMgr: false, isAsst: true },
-            { name: '3', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดบ่าย', defaultShift: 1, isMgr: false, isAsst: true },
-            { name: '4', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดดึก', defaultShift: 2, isMgr: false, isAsst: true },
-            { name: '5', role: 'แคชเชียร์หลัก POS 1', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: '6', role: 'All Café & อุ่นอาหาร', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: '7', role: '7-Delivery & เติมสินค้า', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: '8', role: 'แคชเชียร์ & Counter Service', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: '9', role: 'เติมสินค้า & สต็อกเช้า', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: '10', role: 'แคชเชียร์หลัก POS 1', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: '11', role: '7-Delivery & ไรเดอร์บ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: '12', role: 'All Café & อุ่นอาหารบ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: '13', role: 'แคชเชียร์ POS 2 บ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: '14', role: 'เติมสินค้า & จัดเรียงบ่าย', defaultShift: 1, isMgr: false, isAsst: false },
-            { name: '15', role: 'พนักงานประจำผลัดดึก', defaultShift: 2, isMgr: false, isAsst: false },
-            { name: '16', role: 'พนักงานเสริมผลัดดึก / สต็อก', defaultShift: 2, isMgr: false, isAsst: false },
-            { name: '17', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 0, isMgr: false, isAsst: false },
-            { name: '18', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 1, isMgr: false, isAsst: false }
+            { name: 'สมชาย ใจดี', role: 'ผู้จัดการร้าน / คุมผลัดเช้า', defaultShift: 0, empType: 'mgr' },
+            { name: 'วิชัย มั่นคง', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดเช้า-บ่าย', defaultShift: 2, empType: 'asst' },
+            { name: 'อภิรดี ศรีสุข', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดบ่าย', defaultShift: 1, empType: 'asst' },
+            { name: 'ปนัดดา พรหมมา', role: 'ผู้ช่วยผู้จัดการ / คุมผลัดดึก', defaultShift: 0, empType: 'asst' },
+            { name: 'ชนิศรา คันธะทรัพย์', role: 'แคชเชียร์หลัก POS 1', defaultShift: 0, empType: 'regular' },
+            { name: 'กิตติศักดิ์ าณิชย์', role: 'All Café & อุ่นอาหาร', defaultShift: 0, empType: 'regular' },
+            { name: 'ณัฐพงศ์ งค์', role: '7-Delivery & เติมสินค้า', defaultShift: 0, empType: 'regular' },
+            { name: 'สุภาพร วงศ์ษา', role: 'แคชเชียร์ & Counter Service', defaultShift: 0, empType: 'regular' },
+            { name: 'ธนากร แสงอรุณ', role: 'เติมสินค้า & สต็อกเช้า', defaultShift: 0, empType: 'regular' },
+            { name: 'ศิริพร บุญรอด', role: 'แคชเชียร์หลัก POS 1', defaultShift: 1, empType: 'regular' },
+            { name: 'อนุชา ทองดี', role: '7-Delivery & ไรเดอร์บ่าย', defaultShift: 1, empType: 'regular' },
+            { name: 'ปิยะดา ใจกว้าง', role: 'All Café & อุ่นอาหารบ่าย', defaultShift: 1, empType: 'regular' },
+            { name: 'มนัส สามสกุล', role: 'แคชเชียร์ POS 2 บ่าย', defaultShift: 1, empType: 'regular' },
+            { name: 'รัตนาภรณ์ แจ่มใส', role: 'เติมสินค้า & จัดเรียงบ่าย', defaultShift: 1, empType: 'regular' },
+            { name: 'ภัทราภรณ์ วงศ์สวัสดิ์', role: 'พนักงานประจำผลัดดึก', defaultShift: 2, empType: 'regular' },
+            { name: 'ธนวัฒน์ คงคา', role: 'พนักงานเสริมผลัดดึก / สต็อก', defaultShift: 2, empType: 'regular' },
+            { name: 'พนักงานหมุนเวียน 1', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 0, empType: 'regular' },
+            { name: 'พนักงานหมุนเวียน 2', role: 'พนักงานหมุนเวียน (Part-time)', defaultShift: 1, empType: 'regular' }
         ];
 
         const state = {
-            selectedBranch: '5258',
-            selectedDayIndex: 1, // Tuesday
-            selectedShiftView: 0, // 0=Morning, 1=Afternoon, 2=Night
+            selectedBranch: '10666',
+            selectedDayIndex: 1,
+            selectedShiftView: 0,
+            monthlyMode: 'rotate', // 'rotate' (แบบที่ 2 หมุนเวียนต่อเนื่อง 4 สัปดาห์) | 'repeat' (แบบที่ 1 ทำซ้ำรายสัปดาห์)
+            activePrintType: 'weekly', // 'weekly' | 'monthly'
             dayShortNames: ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'],
             dayFullNames: ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'],
-            totalCustomers: 1042,
+            dailySales: 95672,
+            totalCustomers: 1030,
             dayPcts: [12, 12, 12, 13, 15, 18, 18],
-            shiftPcts: [44, 44, 12],
-            actualStaff: 14,
-            maxHeadcount: 17,
+            shiftPcts: [45, 43, 12],
+            actualStaff: 12,
+            maxHeadcount: 12,
             serviceTimeMin: 1.0,
             posCount: 3,
             cafePct: 25,
-            deliveryOrders: 54,
+            deliveryOrders: 37,
             nonPosPct: 30,
             bufferPct: 20,
             festMult: 1.8,
-            isHourlyReal: false,
-            hourlyCust2Hr: [128, 134, 108, 125, 118, 104, 122, 68, 42, 18, 28, 47]
+            isHourlyReal: true,
+            hourlyCust2Hr: [111, 136, 112, 154, 286, 241, 247, 305, 114, 24, 17, 48]
         };
 
+        // Shift codes: 0 = เช้า (ช), 1 = บ่าย (บ), 2 = ดึก (ด), -1 = OFF / H, -2 = ว่าง (สำหรับ p/t4)
         let rosterPlan = [];
+        let monthlyPlan = [];
+
+        // คืนค่าวันที่ของสัปดาห์ปัจจุบัน (จันทร์–อาทิตย์) และเช็กวันหยุดนักขัตฤกษ์ไทย 2026–2027
+        function getScheduleDateInfo(dayOffset) {
+            const now = new Date();
+            const curDow = now.getDay(); // 0=Sun..6=Sat
+            const diffToMon = curDow === 0 ? -6 : (1 - curDow);
+            const target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon + dayOffset);
+            const yyyy = target.getFullYear();
+            const mm = String(target.getMonth() + 1).padStart(2, '0');
+            const dd = String(target.getDate()).padStart(2, '0');
+            const iso = `${yyyy}-${mm}-${dd}`;
+            const holidayName = THAI_PUBLIC_HOLIDAYS_2026_2027[iso] || '';
+            return {
+                iso,
+                shortDate: `${target.getDate()}/${target.getMonth() + 1}`,
+                holidayName
+            };
+        }
+
+        function isPT4Position(positionStr) {
+            const norm = String(positionStr || '').toLowerCase().replace(/\s+/g, '');
+            return norm.includes('p/t4') || norm.includes('pt4') || norm.includes('p/t-4') || norm.includes('pt-4') || norm.includes('พาร์ทไทม์4');
+        }
+
+        function detectEmpType(positionStr, fallbackType) {
+            const pos = String(positionStr || '').toLowerCase();
+            if (isPT4Position(pos)) return 'pt4';
+            if (pos.includes('ทวิภาคี') || pos.includes('ฝึกงาน') || pos.includes('dve')) return 'intern';
+            if (pos.includes('ผู้ช่วย')) return 'asst';
+            if (pos.includes('ผู้จัดการร้าน')) return 'mgr';
+            return fallbackType || 'regular';
+        }
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
@@ -728,12 +872,15 @@
         function renderBranchPills() {
             const container = document.getElementById('branch-pills');
             if (!container) return;
-            container.innerHTML = Object.values(BRANCH_DATA).map(b => {
+            container.innerHTML = BRANCH_ORDER.map((code, idx) => {
+                const b = BRANCH_DATA[code];
+                if (!b) return '';
                 const isActive = b.code === state.selectedBranch;
+                const quota = calcSalesQuotaFTE(b.dailySales);
                 return `
                     <button onclick="selectBranch('${b.code}')" class="p-2.5 rounded-2xl border text-left transition cursor-pointer ${isActive ? 'bg-seven-green text-white border-seven-green shadow-md' : 'bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'}">
-                        <div class="font-bold text-xs sm:text-sm">${b.name}</div>
-                        <div class="text-[10px] ${isActive ? 'text-emerald-100' : 'text-slate-500'}">ลูกค้า ~${b.totalCustomers.toLocaleString()}/วัน • ${b.maxHeadcount} คน</div>
+                        <div class="font-bold text-xs sm:text-sm">${idx + 1}. ${b.name}</div>
+                        <div class="text-[10px] ${isActive ? 'text-emerald-100' : 'text-slate-500'}">ขาย ~${Number(b.dailySales).toLocaleString()} บ. • ${quota.fte.toFixed(1)} FTE (${b.maxHeadcount} คน)</div>
                     </button>
                 `;
             }).join('');
@@ -746,13 +893,14 @@
         }
 
         function loadBranchIntoState(code, isInitial) {
-            const b = BRANCH_DATA[code] || BRANCH_DATA['5258'];
+            const b = BRANCH_DATA[code] || BRANCH_DATA['10666'];
             state.selectedBranch = b.code;
+            state.dailySales = b.dailySales;
             state.totalCustomers = b.totalCustomers;
             state.dayPcts = [...b.dayPcts];
             state.shiftPcts = [...b.shiftPcts];
             state.actualStaff = b.actualStaff;
-            state.maxHeadcount = Math.min(18, b.maxHeadcount);
+            state.maxHeadcount = b.maxHeadcount;
             state.serviceTimeMin = b.serviceTimeMin;
             state.posCount = b.posCount;
             state.cafePct = b.cafePct;
@@ -769,6 +917,7 @@
                 rosterPlan = [];
             }
             generateSmartRoster();
+            generateMonthlyPlanFromWeek1();
         }
 
         function syncInputsFromState() {
@@ -814,22 +963,62 @@
                     btn.className = 'px-2.5 py-1 rounded-xl font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
                 }
             });
+
+            const btnRot = document.getElementById('monthly-mode-rotate');
+            const btnRep = document.getElementById('monthly-mode-repeat');
+            const descEl = document.getElementById('monthly-mode-desc');
+            if (btnRot && btnRep) {
+                if (state.monthlyMode === 'rotate') {
+                    btnRot.className = 'px-3 py-1.5 rounded-xl font-bold transition cursor-pointer bg-seven-green text-white shadow-xs';
+                    btnRep.className = 'px-3 py-1.5 rounded-xl font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
+                } else {
+                    btnRep.className = 'px-3 py-1.5 rounded-xl font-bold transition cursor-pointer bg-seven-orange text-white shadow-xs';
+                    btnRot.className = 'px-3 py-1.5 rounded-xl font-bold transition cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
+                }
+            }
+            if (descEl) {
+                if (state.monthlyMode === 'rotate') {
+                    descEl.innerHTML = `
+                        <div>
+                            <strong class="text-seven-green"><i class="fa-solid fa-arrows-rotate mr-1"></i>โหมดปัจจุบัน: แบบที่ 2 (หมุนเวียนต่อเนื่อง 4 สัปดาห์ — แนะนำ)</strong>
+                            <span class="block sm:inline sm:ml-2 text-[11px]">สืบทอดวันหยุดทุก 7 วัน (ครบ 5 สัปดาห์หยุดคนละ 5 วัน) • หมุนเวียนกะดึกหลังออกกะตรงวันหยุด (ไม่ควง ด→ช) • เกลี่ยกะเช้า/บ่ายตามเกณฑ์ M/M/S</span>
+                        </div>
+                    `;
+                } else {
+                    descEl.innerHTML = `
+                        <div>
+                            <strong class="text-seven-orange"><i class="fa-solid fa-repeat mr-1"></i>โหมดปัจจุบัน: แบบที่ 1 (ทำซ้ำตารางรายสัปดาห์)</strong>
+                            <span class="block sm:inline sm:ml-2 text-[11px]">นำกะและวันหยุดทั้ง 7 วันของสัปดาห์ที่ 1 (ตารางที่ 3) มาวนซ้ำเหมือนกันทั้ง 5 สัปดาห์</span>
+                        </div>
+                    `;
+                }
+            }
         }
 
         function updateBranchBadges() {
             const b = BRANCH_DATA[state.selectedBranch];
+            const quota = calcSalesQuotaFTE(state.dailySales);
             const badge = document.getElementById('active-branch-badge');
             if (badge && b) {
-                badge.textContent = `สาขา ${b.name} • พนักงาน ${state.maxHeadcount} คน`;
+                badge.textContent = `สาขา ${b.name} • ยอดขาย ~${Number(state.dailySales).toLocaleString()} บ./วัน • โควตา ${quota.fte.toFixed(1)} FTE (${state.maxHeadcount} คน)`;
             }
             const hcBadge = document.getElementById('roster-headcount-badge');
             if (hcBadge) hcBadge.textContent = state.maxHeadcount;
 
-            const stdEl = document.getElementById('sales-quota-standard-text');
-            if (stdEl && b && b.dailySales) {
-                const q = calcSalesQuotaFTE(b.dailySales);
-                const ptText = q.partTime > 0 ? ` + พาร์ทไทม์ 4 ชม. ${q.partTime} คน` : '';
-                stdEl.innerHTML = `สาขา <strong>${b.name}</strong> ยอดขายเฉลี่ย <strong>${b.dailySales.toLocaleString()} บ./วัน</strong> → รับได้ตามสูตร <strong>${q.fte} FTE</strong> (ประจำ 9 ชม. <strong>${q.fullTime} คน</strong>${ptText} = รวม <strong>${q.totalHeads} คน</strong>) ภายใต้เพดานสูงสุด <strong>18 คน/สาขา</strong> (ทำงาน 6 วัน / หยุด 1 วัน เผื่อวันหยุด +20%)`;
+            const quotaCard = document.getElementById('sales-quota-standard-card');
+            if (quotaCard && b) {
+                const ptNote = quota.partTime > 0
+                    ? `ประจำ 9 ชม. <strong>${quota.fullTime} คน</strong> + พาร์ทไทม์ 4 ชม. <strong>${quota.partTime} คน</strong> (รวมตัวตน ${quota.totalHeads} คน)`
+                    : `ประจำ 9 ชม. <strong>${quota.fullTime} คน</strong> (รวมตัวตน ${quota.totalHeads} คน)`;
+                quotaCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-slate-900 dark:text-white">6. เพดานกำลังคน &amp; เผื่อวันหยุด (สูงสุด 18 คน)</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">สูตรบริษัท + กฎหมาย</span>
+                    </div>
+                    <p class="text-slate-700 dark:text-slate-300 leading-relaxed">
+                        สาขา <strong>${b.name}</strong> ยอดขายเฉลี่ย <strong>${Number(state.dailySales).toLocaleString()} บ./วัน</strong> ได้โควตา <strong>${quota.fte.toFixed(1)} FTE</strong> (${ptNote}) คุมเพดานสูงสุดไม่เกิน <strong>18 คน/สาขา</strong> และเผื่อวันหยุด +20% (6 วัน หยุด 1 วัน)
+                    </p>
+                `;
             }
 
             renderBranchPills();
@@ -875,6 +1064,7 @@
         function onDayPctChange(idx, val) {
             state.dayPcts[idx] = Math.max(0, Number(val) || 0);
             generateSmartRoster();
+            generateMonthlyPlanFromWeek1();
             refreshAll();
         }
 
@@ -884,20 +1074,22 @@
                 return el ? (Number(el.value) || 0) : fallback;
             };
             state.totalCustomers = Math.max(50, getNum('input-total-cust', 1000));
+            state.actualStaff = Math.max(1, getNum('input-actual-staff', 12));
             state.shiftPcts = [
-                getNum('input-pct-s1', 44),
-                getNum('input-pct-s2', 44),
+                getNum('input-pct-s1', 45),
+                getNum('input-pct-s2', 43),
                 getNum('input-pct-s3', 12)
             ];
             state.serviceTimeMin = Math.max(0.2, getNum('input-service-time', 1.0));
             state.posCount = Math.max(1, Math.min(6, getNum('input-pos-count', 3)));
             state.cafePct = Math.max(0, getNum('input-cafe-pct', 25));
-            state.deliveryOrders = Math.max(0, getNum('input-delivery', 40));
+            state.deliveryOrders = Math.max(0, getNum('input-delivery', 37));
             state.nonPosPct = Math.max(0, getNum('input-non-pos', 30));
             state.bufferPct = Math.max(0, getNum('input-buffer', 20));
             state.festMult = Math.max(1.0, getNum('input-fest-mult', 1.8));
 
             generateSmartRoster();
+            generateMonthlyPlanFromWeek1();
             refreshAll();
         }
 
@@ -910,14 +1102,15 @@
         }
 
         function onHeadcountInput(val) {
-            state.maxHeadcount = Math.max(6, Math.min(18, Number(val) || 16));
+            state.maxHeadcount = Math.max(6, Math.min(18, Number(val) || 12));
             const inp = document.getElementById('input-max-headcount');
             if (inp) inp.value = state.maxHeadcount;
             generateSmartRoster();
+            generateMonthlyPlanFromWeek1();
             refreshAll();
         }
 
-        // ขั้นที่ 1: คำนวณเกณฑ์กำลังคนแนะนำของแต่ละวัน (จันทร์-อาทิตย์) ภายใต้นโยบายสูงสุด 18 คน/สาขา + งานควบหน้าที่จริง
+        // คำนวณเกณฑ์กำลังคนแนะนำของแต่ละวัน (จันทร์-อาทิตย์) ภายใต้นโยบายสูงสุด 18 คน/สาขา + งานควบหน้าที่จริง
         function getRecommendedForDay(dayIdx) {
             const dayCust = getDayCustomers(dayIdx);
             const totalPct = state.shiftPcts.reduce((a, b) => a + b, 0) || 100;
@@ -929,24 +1122,20 @@
                 const custInShift = Math.round(dayCust * share);
                 const netHours = 8.0;
 
-                // แคชเชียร์หลัก (POS): กะเช้า/บ่ายเปิด 1-2 เครื่องตามปริมาณลูกค้า, กะดึกเปิด 1 เครื่อง
                 const posWorkloadMins = custInShift * state.serviceTimeMin;
                 const posRequired = idx === 2
                     ? 1
                     : Math.min(Math.min(2, state.posCount), Math.max(1, Math.ceil((posWorkloadMins / 60) / (netHours * 0.70))));
 
-                // All Café & อุ่นอาหาร: กะเช้า/บ่ายแยกบาริสต้าหลัก 1 คน (เมื่อมีออเดอร์ >= 25 รายการ), กะดึก 0 คน (แคชเชียร์อุ่นเอง)
                 const cafeItems = Math.round(custInShift * (state.cafePct / 100));
                 const cafeRequired = (idx < 2 && cafeItems >= 25) ? 1 : 0;
 
-                // 7-Delivery: วิ่งส่งเป็นรอบรวม 2-3 บิล (~22 นาที/บิล) ใช้ไรเดอร์ 1-2 คนในกะเช้า/บ่าย
                 const delivOrders = Math.round(state.deliveryOrders * delivShares[idx]);
                 const delivMins = delivOrders * 22;
                 const delivRequired = (idx < 2 && delivOrders > 0)
                     ? Math.min(2, Math.max(1, Math.round((delivMins / 60) / (netHours * 0.75))))
                     : 0;
 
-                // งานหลังร้าน/เติมของ/รับสินค้า: กะเช้า/บ่าย 1-2 คนตามสัดส่วนงานหลังร้าน, กะดึก 1 คน (คู่กับ POS รวม 2 คน)
                 const baseFrontStaff = posRequired + cafeRequired + delivRequired;
                 const nonPosStaff = idx === 2
                     ? 1
@@ -964,7 +1153,6 @@
                 };
             });
 
-            // คุมเพดานไม่ให้เกินขีดจำกัดสูงสุดของสาขา (สูงสุด 18 คน/วันในวันศุกร์-อาทิตย์ และ 15 คนในวันจันทร์-พฤหัสบดี)
             const maxDailyCap = dayIdx >= 4 ? MAX_STORE_STAFF : Math.min(MAX_STORE_STAFF, 15);
             let sumRec = rawShifts.reduce((s, x) => s + x.recommended, 0);
 
@@ -1075,10 +1263,10 @@
             const totalPct = state.shiftPcts.reduce((a, b) => a + b, 0) || 100;
             const dayRecs = getRecommendedForDay(state.selectedDayIndex);
 
-            // ดึงจำนวนคนเข้ากะจริง (เช้า / บ่าย / ดึก) ของวันที่เลือกมาจากตารางที่ 3
             let actualPerShift = [0, 0, 0];
             if (Array.isArray(rosterPlan) && rosterPlan.length > 0) {
                 rosterPlan.forEach(emp => {
+                    if (emp.empType === 'pt4') return;
                     const code = emp.days[state.selectedDayIndex];
                     if (code === 0 || code === 1 || code === 2) {
                         actualPerShift[code]++;
@@ -1101,8 +1289,8 @@
             const scaleFactor = dayCust / slotSum;
 
             const shiftMeta = [
-                { name: 'กะที่ 1 เช้า (06:00 - 15:00 น.)', slotStart: 0, slotEnd: 4, peakMult: 1.35 },
-                { name: 'กะที่ 2 บ่าย (14:00 - 23:00 น.)', slotStart: 4, slotEnd: 8, peakMult: 1.35 },
+                { name: 'กะที่ 1 เช้า (06:30 - 15:30 น.)', slotStart: 0, slotEnd: 4, peakMult: 1.35 },
+                { name: 'กะที่ 2 บ่าย (13:30 - 22:30 น.)', slotStart: 4, slotEnd: 8, peakMult: 1.35 },
                 { name: 'กะที่ 3 ดึก (22:00 - 07:00 น.)', slotStart: 8, slotEnd: 12, peakMult: 1.40 }
             ];
 
@@ -1169,13 +1357,14 @@
             if (!container) return;
             const activeShift = metrics.shifts[state.selectedShiftView] || metrics.shifts[0];
             const dayName = state.dayFullNames[state.selectedDayIndex];
+            const quota = calcSalesQuotaFTE(state.dailySales);
             const diffHeadcount = state.maxHeadcount - metrics.totalWithBuffer;
 
             container.innerHTML = `
                 <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div class="text-xs text-slate-500 font-medium">ลูกค้าวัน${dayName}</div>
                     <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">${metrics.dayCust.toLocaleString()} <span class="text-xs font-normal text-slate-500">คน/วัน</span></div>
-                    <div class="text-[11px] text-seven-green font-semibold mt-1">เฉลี่ย ${(metrics.dayCust / 24).toFixed(1)} คน/ชม.</div>
+                    <div class="text-[11px] text-seven-green font-semibold mt-1">ยอดขายเฉลี่ย ~${Number(state.dailySales).toLocaleString()} บ./วัน</div>
                 </div>
                 <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div class="text-xs text-slate-500 font-medium">คิวช่วงพีค (${activeShift.name.split(' ')[0]} ${activeShift.name.split(' ')[1]})</div>
@@ -1183,14 +1372,12 @@
                     <div class="text-[11px] text-slate-500 mt-1">รอ ~${activeShift.queue.waitMinutes} นาที (เปิด ${activeShift.activeLanes} เครื่อง)</div>
                 </div>
                 <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div class="text-xs text-slate-500 font-medium">คนมาปฏิบัติงานจริงวันนี้</div>
-                    <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">${metrics.totalActual} <span class="text-xs font-normal text-slate-500">/ แนะนำ ${metrics.totalRecommended} คน</span></div>
-                    <div class="text-[11px] ${metrics.totalActual >= metrics.totalRecommended ? 'text-seven-green' : 'text-seven-orange'} font-semibold mt-1">
-                        ${metrics.totalActual >= metrics.totalRecommended ? 'กำลังคนเพียงพอต่อปริมาณลูกค้า' : `ขาด ${metrics.totalRecommended - metrics.totalActual} คน (เสริม OT ช่วงพีค)`}
-                    </div>
+                    <div class="text-xs text-slate-500 font-medium">โควตาพนักงานตามยอดขาย (FTE)</div>
+                    <div class="text-2xl font-bold text-seven-orange mt-1">${quota.fte.toFixed(1)} <span class="text-xs font-normal text-slate-500">FTE (${quota.totalHeads} คน)</span></div>
+                    <div class="text-[11px] text-slate-500 mt-1">ประจำ ${quota.fullTime} คน (9 ชม.)${quota.partTime > 0 ? ` + พาร์ทไทม์ ${quota.partTime} คน (4 ชม.)` : ''}</div>
                 </div>
                 <div class="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div class="text-xs text-slate-500 font-medium">พนักงานขึ้นทะเบียนทั้งหมด (เพดาน 18)</div>
+                    <div class="text-xs text-slate-500 font-medium">พนักงานจัดตารางจริง (เพดาน 18)</div>
                     <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">${state.maxHeadcount} <span class="text-xs font-normal text-slate-500">/ เป้าหมาย ${metrics.totalWithBuffer} คน</span></div>
                     <div class="text-[11px] ${diffHeadcount >= 0 ? 'text-seven-green' : 'text-seven-orange'} font-semibold mt-1">
                         ${diffHeadcount >= 0 ? `เพียงพอภายใต้เพดาน 18 คน (+${diffHeadcount} คน)` : `ขาดอีก ${Math.abs(diffHeadcount)} คน (สูงสุดไม่เกิน 18 คน)`}
@@ -1286,7 +1473,7 @@
                 const queue = computeMMSQueue(cust, f.netHours, state.posCount, state.serviceTimeMin, 1.35, 0);
                 const posReq = Math.min(state.posCount, Math.max(2, Math.ceil(((cust * state.serviceTimeMin) / 60) / (f.netHours * 0.8))));
                 const cafeReq = Math.max(1, Math.round(((cust * (state.cafePct / 100) * 3) / 60) / (f.netHours * 0.8)));
-                const delivReq = idx === 0 ? Math.max(1, Math.round((state.deliveryOrders * state.festMult * 22 / 60) / (f.netHours * 0.8))) : 0;
+                const delivReq = idx === 0 ? Math.max(1, Math.round((state.deliveryOrders * state.festMult * 45 / 60) / (f.netHours * 0.8))) : 0;
                 const stockReq = Math.max(1, Math.round((posReq + cafeReq) * 0.35));
                 const recommended = posReq + cafeReq + delivReq + stockReq;
                 const available = idx === 0 ? Math.ceil(state.maxHeadcount * 0.65) : Math.floor(state.maxHeadcount * 0.35);
@@ -1315,114 +1502,171 @@
             }).join('');
         }
 
+        // =========================================================================
+        // ตารางที่ 3: จัดตารางรายสัปดาห์ (สัปดาห์ที่ 1) ตามกฎมาตรฐานของระบบอย่างเคร่งครัด
+        // =========================================================================
         function generateSmartRoster() {
+            const branchObj = BRANCH_DATA[state.selectedBranch] || BRANCH_DATA['10666'];
+            const liveStaffList = Array.isArray(branchObj.liveStaff) ? branchObj.liveStaff : [];
+            const livePT4List = Array.isArray(branchObj.livePT4) ? branchObj.livePT4 : [];
             const totalStaff = Math.max(6, Math.min(18, state.maxHeadcount));
-            const existingNames = rosterPlan.map(e => e.name);
+            const existingCore = rosterPlan.filter(e => e.empType !== 'pt4');
+            const existingPT4 = rosterPlan.filter(e => e.empType === 'pt4');
 
-            // ขั้นที่ 1: คำนวณเกณฑ์กำลังคนที่ต้องการของครบทั้ง 7 วันก่อนเสมอ
             const weeklyRecs = Array.from({ length: 7 }, (_, d) => getRecommendedForDay(d));
 
-            // ขั้นที่ 2: จัดตารางเวรตั้งต้น + วางวันหยุด (OFF) + ให้ผู้ช่วยฯ คุมครบทุกผลัด
-            const pool = STAFF_POOL.slice(0, totalStaff).map((item, idx) => ({
-                ...item,
-                name: existingNames[idx] || item.name,
-                days: Array(7).fill(item.defaultShift)
-            }));
+            // 1) สร้างรายชื่อและประเภทพนักงานหลัก (ไม่รวม p/t4)
+            const corePool = STAFF_POOL.slice(0, totalStaff).map((item, idx) => {
+                const prev = existingCore[idx];
+                const realEmp = liveStaffList[idx];
 
-            // 2.1 Assign Day-Offs (Mon-Thu priority, Manager Sat/Sun only)
-            const offRotation = [1, 2, 3, 0]; // Tue, Wed, Thu, Mon
-            pool.forEach((emp, idx) => {
-                if (emp.isMgr) {
-                    emp.days[5] = -1; // Manager OFF on Saturday
-                } else if (idx === 1) {
-                    emp.days[3] = -1; // Asst 1 (Morning/Afternoon) OFF on Thursday
-                } else if (idx === 2) {
-                    emp.days[1] = -1; // Asst 2 (Afternoon) OFF on Tuesday
-                } else if (idx === 3) {
-                    emp.days[2] = -1; // Asst 3 (Night) OFF on Wednesday
-                } else {
-                    const offDay = offRotation[(idx - 4) % offRotation.length];
-                    emp.days[offDay] = -1;
+                const resolvedName = (realEmp && realEmp.name)
+                    ? realEmp.name
+                    : (prev && prev.name && !/^\d+$/.test(prev.name) ? prev.name : item.name);
+
+                const resolvedRole = (realEmp && realEmp.position)
+                    ? realEmp.position
+                    : (prev && prev.role ? prev.role : item.role);
+
+                const empType = (realEmp && realEmp.position)
+                    ? detectEmpType(realEmp.position, item.empType)
+                    : (prev && prev.empType ? prev.empType : detectEmpType(resolvedRole, item.empType));
+
+                return {
+                    name: resolvedName,
+                    role: resolvedRole,
+                    empType,
+                    defaultShift: item.defaultShift,
+                    days: Array(7).fill(0)
+                };
+            });
+
+            // 2) จัดตามกฎเฉพาะตำแหน่ง:
+            // - ผจก. (mgr): กะเช้า (0) อย่างเดียว + หยุดวันเสาร์ (-1)
+            // - ทวิภาคี <18 (intern): กะเช้า (0) จันทร์–ศุกร์ + หยุดเสาร์–อาทิตย์ (-1)
+            corePool.forEach(emp => {
+                if (emp.empType === 'mgr') {
+                    emp.days = [0, 0, 0, 0, 0, -1, 0];
+                } else if (emp.empType === 'intern') {
+                    emp.days = [0, 0, 0, 0, 0, -1, -1];
                 }
             });
 
-            // 2.2 Ensure Assistant Coverage across all 3 shifts every day
-            for (let d = 0; d < 7; d++) {
-                if (pool[3] && pool[3].days[d] === -1 && pool[1] && pool[1].days[d] !== -1) {
-                    pool[1].days[d] = 2;
-                }
-                if (pool[2] && pool[2].days[d] === -1 && pool[1] && pool[1].days[d] === 0) {
-                    pool[1].days[d] = 1;
+            // 3) กฎการจัดผลัดของผู้ช่วยฯ (เน้นดึกก่อน ดึก -> บ่าย -> เช้า และต้องมีผู้ช่วยฯ กะดึกอย่างน้อย 1 คนทุกคืน)
+            const asstList = corePool.filter(e => e.empType === 'asst');
+            if (asstList.length === 1) {
+                asstList[0].days = [2, 2, -1, 2, 2, 2, 2];
+            } else if (asstList.length === 2) {
+                asstList[0].days = [2, 2, -1, 2, 2, 2, 2];
+                asstList[1].days = [1, 1, 2, -1, 1, 1, 1];
+            } else if (asstList.length >= 3) {
+                asstList[0].days = [2, 2, -1, 2, 2, 2, 2];
+                asstList[1].days = [1, 1, 2, -1, 1, 1, 1];
+                asstList[2].days = [0, -1, 0, 1, 0, 0, 0];
+                for (let k = 3; k < asstList.length; k++) {
+                    const offD = k % 2 === 1 ? 0 : 3;
+                    asstList[k].days = Array.from({ length: 7 }, (_, d) => d === offD ? -1 : (k % 2 === 1 ? 0 : 1));
                 }
             }
 
-            // ขั้นที่ 3: งานเกลี่ยกำลังคน (ทำเฉพาะเมื่อมีกะที่คนเกินเกณฑ์แนะนำ AND กะที่คนขาดเกณฑ์แนะนำ พร้อมกัน)
+            // 4) จัดพนักงานประจำทั่วไป (regular): ทำงาน 6 วัน หยุด 1 วัน (เน้นหยุด จ-พฤ เพื่อให้ ศ-อา เต็มกำลัง)
+            const regulars = corePool.filter(e => e.empType === 'regular');
+            const offRotation = [1, 2, 3, 0]; // อังคาร, พุธ, พฤหัส, จันทร์
+
+            regulars.forEach((emp, idx) => {
+                const offDay = idx === 0 ? 1 : (idx === 1 ? 3 : offRotation[idx % offRotation.length]);
+                const baseShift = idx < 2 ? 2 : (idx % 2 === 0 ? 0 : 1);
+                emp.days = Array.from({ length: 7 }, (_, d) => (d === offDay ? -1 : baseShift));
+            });
+
+            // 5) เกลี่ยกะเช้า / กะบ่าย เฉพาะพนักงานประจำ (regular) ให้สอดคล้องกับความต้องการลูกค้า M/M/S ในแต่ละวัน
             for (let d = 0; d < 7; d++) {
                 const recS1 = weeklyRecs[d][0].recommended;
                 const recS2 = weeklyRecs[d][1].recommended;
 
-                const s1Movable = [];
-                const s2Movable = [];
                 let s1Count = 0, s2Count = 0;
+                const s1Movable = [], s2Movable = [];
 
-                pool.forEach((emp, idx) => {
+                corePool.forEach((emp, idx) => {
                     const c = emp.days[d];
                     if (c === 0) {
                         s1Count++;
-                        if (!emp.isMgr && !emp.isAsst) s1Movable.push(idx);
+                        if (emp.empType === 'regular') s1Movable.push(idx);
                     } else if (c === 1) {
                         s2Count++;
-                        if (!emp.isMgr && !emp.isAsst) s2Movable.push(idx);
+                        if (emp.empType === 'regular') s2Movable.push(idx);
                     }
                 });
 
-                // กรณี A: กะเช้าเกินเกณฑ์แนะนำ (s1Count > recS1) และ กะบ่ายขาดจากเกณฑ์แนะนำ (s2Count < recS2)
                 while (s1Count > recS1 && s2Count < recS2 && s1Movable.length > 0) {
-                    const moveIdx = s1Movable.pop();
-                    const prevShift = d > 0 ? pool[moveIdx].days[d - 1] : -1;
+                    const mIdx = s1Movable.pop();
+                    const prevShift = d > 0 ? corePool[mIdx].days[d - 1] : -1;
                     if (prevShift !== 2) {
-                        pool[moveIdx].days[d] = 1;
+                        corePool[mIdx].days[d] = 1;
                         s1Count--;
                         s2Count++;
                     }
                 }
 
-                // กรณี B: กะบ่ายเกินเกณฑ์แนะนำ (s2Count > recS2) และ กะเช้าขาดจากเกณฑ์แนะนำ (s1Count < recS1)
                 while (s2Count > recS2 && s1Count < recS1 && s2Movable.length > 0) {
-                    const moveIdx = s2Movable.pop();
-                    const prevShift = d > 0 ? pool[moveIdx].days[d - 1] : -1;
+                    const mIdx = s2Movable.pop();
+                    const prevShift = d > 0 ? corePool[mIdx].days[d - 1] : -1;
                     if (prevShift !== 2) {
-                        pool[moveIdx].days[d] = 0;
+                        corePool[mIdx].days[d] = 0;
                         s2Count--;
                         s1Count++;
                     }
                 }
             }
 
-            // ขั้นที่ 4: ล็อกกฎความปลอดภัยปิดท้าย (ผลัดดึก >= 2 คนทุกคืน และ ห้ามควงกะข้ามคืน S3 -> S1)
+            // 6) ตรวจสอบความปลอดภัยปิดท้าย: ห้าม ดึก -> เช้า และ ผลัดดึกต้อง >= 2 คนทุกคืน (รวมผู้ช่วยฯ 1 + ประจำ >= 1)
             for (let d = 0; d < 7; d++) {
                 if (d > 0) {
-                    pool.forEach(emp => {
+                    corePool.forEach(emp => {
+                        if (emp.empType !== 'regular') return;
                         if (emp.days[d - 1] === 2 && emp.days[d] === 0) {
                             emp.days[d] = 2;
                         }
                     });
                 }
 
-                let nightStaff = pool.filter(e => e.days[d] === 2);
-                if (nightStaff.length < 2) {
-                    for (let i = pool.length - 1; i >= 4 && nightStaff.length < 2; i--) {
-                        const emp = pool[i];
+                let nightCount = corePool.filter(e => e.days[d] === 2).length;
+                if (nightCount < 2) {
+                    for (let i = corePool.length - 1; i >= 0 && nightCount < 2; i--) {
+                        const emp = corePool[i];
+                        if (emp.empType !== 'regular') continue;
+                        const prevShift = d > 0 ? emp.days[d - 1] : -1;
                         const nextShift = d < 6 ? emp.days[d + 1] : -1;
-                        if (emp.days[d] !== -1 && emp.days[d] !== 2 && nextShift !== 0) {
+                        if (emp.days[d] !== -1 && emp.days[d] !== 2 && prevShift !== 2 && nextShift !== 0) {
                             emp.days[d] = 2;
-                            nightStaff.push(emp);
+                            nightCount++;
+                        }
+                    }
+                }
+                if (nightCount < 2) {
+                    for (let i = corePool.length - 1; i >= 0 && nightCount < 2; i--) {
+                        const emp = corePool[i];
+                        if (emp.empType !== 'regular') continue;
+                        if (emp.days[d] !== -1 && emp.days[d] !== 2) {
+                            emp.days[d] = 2;
+                            if (d < 6 && emp.days[d + 1] === 0) emp.days[d + 1] = 1;
+                            nightCount++;
                         }
                     }
                 }
             }
 
-            rosterPlan = pool;
+            // 7) แยกกลุ่มพนักงาน p/t4 ต่อท้ายตารางเสมอ (FTE = 0, ล็อกช่องกะเป็น -2 ทุกวัน)
+            const pt4Source = livePT4List.length > 0 ? livePT4List : existingPT4;
+            const pt4Rows = pt4Source.map(p => ({
+                name: p.name,
+                role: p.position || p.role || 'p/t4',
+                empType: 'pt4',
+                defaultShift: -2,
+                days: [-2, -2, -2, -2, -2, -2, -2]
+            }));
+
+            rosterPlan = [...corePool, ...pt4Rows];
         }
 
         function renderRosterTable() {
@@ -1433,69 +1677,100 @@
             if (!theadRow || !tbody || !tfoot) return;
 
             theadRow.innerHTML = `
-                <th class="py-3 px-3 font-bold min-w-[165px]">ชื่อพนักงาน / ตำแหน่ง <span class="text-[10px] font-normal text-seven-green">(คลิกชื่อเพื่อแก้)</span></th>
+                <th class="py-3 px-3 font-bold min-w-[195px]">ชื่อพนักงาน / ตำแหน่ง <span class="text-[10px] font-normal text-seven-green">(คลิกชื่อเพื่อแก้)</span></th>
                 ${state.dayFullNames.map((dName, idx) => {
                     const cust = getDayCustomers(idx);
+                    const dateInfo = getScheduleDateInfo(idx);
+                    const isHolidayOrWeekend = idx >= 4 || Boolean(dateInfo.holidayName);
                     return `
-                        <th class="py-2.5 px-2 font-bold text-center min-w-[92px] ${idx >= 4 ? 'text-seven-red' : ''}">
-                            <div>${dName}</div>
+                        <th class="py-2.5 px-2 font-bold text-center min-w-[96px] ${isHolidayOrWeekend ? 'text-seven-red' : ''}" title="${dateInfo.holidayName || dateInfo.iso}">
+                            <div>${dName} <span class="text-[10px] font-normal text-slate-400">(${dateInfo.shortDate})</span></div>
                             <div class="text-[10px] font-normal text-slate-500">${cust.toLocaleString()} คน</div>
+                            ${dateInfo.holidayName ? `<div class="mt-0.5 px-1 py-0.2 rounded bg-rose-100 text-seven-red text-[9px] font-bold truncate max-w-[90px] mx-auto">${dateInfo.holidayName}</div>` : ''}
                         </th>
                     `;
                 }).join('')}
-                <th class="py-3 px-2 font-bold text-center min-w-[85px]">ทำงาน / หยุด</th>
+                <th class="py-3 px-2 font-bold text-center min-w-[95px]">ทำงาน / หยุด</th>
             `;
 
             const shiftBadges = {
-                0: { label: 'กะ 1 เช้า', cls: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border-emerald-300' },
-                1: { label: 'กะ 2 บ่าย', cls: 'bg-orange-100 hover:bg-orange-200 text-orange-900 border-orange-300' },
-                2: { label: 'กะ 3 ดึก', cls: 'bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border-indigo-300' },
-                '-1': { label: 'OFF หยุด', cls: 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300' }
+                0: { label: 'กะ 1 เช้า (ช)', cls: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border-emerald-300' },
+                1: { label: 'กะ 2 บ่าย (บ)', cls: 'bg-orange-100 hover:bg-orange-200 text-orange-900 border-orange-300' },
+                2: { label: 'กะ 3 ดึก (ด)', cls: 'bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border-indigo-300' },
+                '-1': { label: 'OFF / H', cls: 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300' },
+                '-2': { label: '', cls: 'bg-slate-50/60 dark:bg-slate-900/40 text-transparent border-dashed border-slate-300 dark:border-slate-700 cursor-not-allowed min-h-[30px]' }
+            };
+
+            const typeTags = {
+                mgr: '<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">ผจก.</span>',
+                asst: '<span class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[9px] font-bold">ผู้ช่วยฯ</span>',
+                intern: '<span class="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 text-[9px] font-bold">ทวิภาคี &lt;18</span>',
+                pt4: '<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-bold">p/t4 • ไม่นับในกะ</span>',
+                regular: ''
             };
 
             tbody.innerHTML = rosterPlan.map((emp, empIdx) => {
-                const workDays = emp.days.filter(c => c !== -1).length;
-                const offDays = 7 - workDays;
+                const isPT4 = emp.empType === 'pt4';
+                const workDays = isPT4 ? 0 : emp.days.filter(c => c >= 0).length;
+                const offDays = isPT4 ? 0 : (7 - workDays);
                 return `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <tr class="${isPT4 ? 'bg-amber-50/30 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}">
                         <td class="py-2.5 px-3">
                             <button onclick="openEditEmpModal(${empIdx})" class="text-left group cursor-pointer w-full">
-                                <div class="font-bold text-slate-900 dark:text-white group-hover:text-seven-green flex items-center gap-1.5">
+                                <div class="font-bold text-slate-900 dark:text-white group-hover:text-seven-green flex items-center gap-1.5 flex-wrap">
                                     <span>${emp.name}</span>
+                                    ${typeTags[emp.empType] || ''}
                                     <i class="fa-solid fa-pen text-[10px] text-slate-400 group-hover:text-seven-green"></i>
                                 </div>
                                 <div class="text-[10px] text-slate-500">${emp.role}</div>
                             </button>
                         </td>
                         ${emp.days.map((code, dIdx) => {
-                            const b = shiftBadges[code] || shiftBadges['-1'];
+                            const displayCode = isPT4 ? -2 : code;
+                            const b = shiftBadges[displayCode] || shiftBadges['-1'];
                             return `
                                 <td class="py-2 px-1.5 text-center">
-                                    <button onclick="cycleEmployeeShift(${empIdx}, ${dIdx})" class="w-full py-1.5 px-1.5 rounded-xl border text-[11px] font-bold transition cursor-pointer ${b.cls}">
-                                        ${b.label}
+                                    <button onclick="cycleEmployeeShift(${empIdx}, ${dIdx})" ${isPT4 ? 'disabled title="พนักงาน p/t4 เว้นค่าว่าง ไม่นับเป็นกำลังคนในกะ"' : ''} class="w-full py-1.5 px-1.5 rounded-xl border text-[11px] font-bold transition ${isPT4 ? 'cursor-not-allowed' : 'cursor-pointer'} ${b.cls}">
+                                        ${isPT4 ? '&nbsp;' : b.label}
                                     </button>
                                 </td>
                             `;
                         }).join('')}
                         <td class="py-2.5 px-2 text-center text-[11px] font-semibold">
-                            <span class="text-seven-green">${workDays} วัน</span> / <span class="text-slate-500">${offDays} OFF</span>
+                            ${isPT4
+                                ? '<span class="text-amber-700 dark:text-amber-400 text-[10px] font-bold">ไม่นับกำลังคนในกะ</span>'
+                                : `<span class="text-seven-green">${workDays} วัน</span> / <span class="text-slate-500">${offDays} OFF</span>`
+                            }
                         </td>
                     </tr>
                 `;
             }).join('');
 
-            const daySummaries = Array.from({ length: 7 }, () => ({ s1: 0, s2: 0, s3: 0, off: 0 }));
+            const daySummaries = Array.from({ length: 7 }, () => ({ s1: 0, s2: 0, s3: 0, off: 0, asstS1: 0, asstS2: 0, asstS3: 0 }));
             const warnings = [];
+            const asstMembers = rosterPlan.filter(e => e.empType === 'asst');
 
             rosterPlan.forEach(emp => {
+                if (emp.empType === 'pt4') return;
                 emp.days.forEach((c, dIdx) => {
-                    if (c === 0) daySummaries[dIdx].s1++;
-                    else if (c === 1) daySummaries[dIdx].s2++;
-                    else if (c === 2) daySummaries[dIdx].s3++;
-                    else daySummaries[dIdx].off++;
+                    if (c === 0) {
+                        daySummaries[dIdx].s1++;
+                        if (emp.empType === 'asst') daySummaries[dIdx].asstS1++;
+                    } else if (c === 1) {
+                        daySummaries[dIdx].s2++;
+                        if (emp.empType === 'asst') daySummaries[dIdx].asstS2++;
+                    } else if (c === 2) {
+                        daySummaries[dIdx].s3++;
+                        if (emp.empType === 'asst') daySummaries[dIdx].asstS3++;
+                    } else if (c === -1) {
+                        daySummaries[dIdx].off++;
+                    }
 
                     if (dIdx > 0 && emp.days[dIdx - 1] === 2 && c === 0) {
                         warnings.push(`<strong>${emp.name}</strong> ถูกจัดเข้ากะ 3 ดึกคืนวัน${state.dayFullNames[dIdx - 1]} ต่อด้วยกะ 1 เช้าวัน${state.dayFullNames[dIdx]}`);
+                    }
+                    if (emp.empType === 'intern' && (c === 1 || c === 2 || (dIdx >= 5 && c >= 0))) {
+                        warnings.push(`<strong>${emp.name} (ทวิภาคี &lt;18 ปี)</strong> ลงได้เฉพาะกะเช้า จันทร์–ศุกร์ และต้องหยุด เสาร์–อาทิตย์`);
                     }
                 });
             });
@@ -1504,26 +1779,30 @@
                 if (ds.s3 < 2) {
                     warnings.push(`วัน${state.dayFullNames[dIdx]} ผลัดดึกมีพนักงานเพียง <strong>${ds.s3} คน</strong> (ต้องมีอย่างน้อย 2 คนทุกคืน)`);
                 }
-                if (ds.s2 < 2) {
-                    warnings.push(`วัน${state.dayFullNames[dIdx]} ผลัดบ่ายมีพนักงาน <strong>${ds.s2} คน</strong> (แนะนำให้จัดพนักงานทำ OT ช่วงพีคเย็น 15:00–19:00 น.)`);
+                if (asstMembers.length > 0 && ds.asstS3 < 1) {
+                    warnings.push(`วัน${state.dayFullNames[dIdx]} <strong>ขาดผู้ช่วยฯ คุมกะดึก</strong> (ต้องมีผู้ช่วยฯ กะดึกอย่างน้อย 1 คนทุกคืน)`);
+                }
+                if (asstMembers.length === 2 && ds.asstS1 > 0 && ds.asstS2 === 0) {
+                    warnings.push(`วัน${state.dayFullNames[dIdx]} ร้านมีผู้ช่วยฯ 2 คน แต่จัดผู้ช่วยฯ ลงกะเช้าก่อนกะบ่าย (ต้องเรียง ดึก → บ่าย → เช้า)`);
                 }
             });
 
+            const activeCoreCount = rosterPlan.filter(e => e.empType !== 'pt4').length;
+            const pt4Count = rosterPlan.filter(e => e.empType === 'pt4').length;
+
             tfoot.innerHTML = `
                 <tr>
-                    <td class="py-3 px-3 text-slate-800 dark:text-slate-100">สรุปคนเข้ากะรายวัน (เช้า/บ่าย/ดึก)</td>
-                    ${daySummaries.map((ds, dIdx) => {
+                    <td class="py-3 px-3 text-slate-800 dark:text-slate-100">สรุปคนเข้ากะรายวัน (ช / บ / ด)</td>
+                    ${daySummaries.map(ds => {
                         const totalWork = ds.s1 + ds.s2 + ds.s3;
-                        const rec = getRecommendedForDay(dIdx);
                         return `
                             <td class="py-2.5 px-1.5 text-center leading-tight">
                                 <div class="text-slate-900 dark:text-white">รวม ${totalWork} คน</div>
                                 <div class="text-[11px] text-seven-green">${ds.s1}/${ds.s2}/${ds.s3} <span class="text-slate-500 font-normal">(${ds.off} OFF)</span></div>
-                                <div class="text-[10px] text-slate-500 font-normal">เกณฑ์ ${rec[0].recommended}/${rec[1].recommended}/${rec[2].recommended}</div>
                             </td>
                         `;
                     }).join('')}
-                    <td class="py-3 px-2 text-center text-seven-green">รวม ${rosterPlan.length} คน</td>
+                    <td class="py-3 px-2 text-center text-seven-green">หลัก ${activeCoreCount} คน${pt4Count > 0 ? `<div class="text-[9px] text-amber-700 font-normal">+${pt4Count} p/t4</div>` : ''}</td>
                 </tr>
             `;
 
@@ -1531,15 +1810,15 @@
                 if (warnings.length > 0) {
                     alertBox.innerHTML = `
                         <div class="p-3 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-seven-red dark:text-rose-300 space-y-1">
-                            <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i><span>ข้อควรระวัง / คำแนะนำ OT ประจำสัปดาห์:</span></div>
-                            <ul class="list-disc list-inside text-[11px]">${warnings.map(w => `<li>${w}</li>`).join('')}</ul>
+                            <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i><span>จุดเสี่ยง / แจ้งเตือนกฎการจัดตารางเวร:</span></div>
+                            <ul class="list-disc list-inside text-[11px]">${[...new Set(warnings)].map(w => `<li>${w}</li>`).join('')}</ul>
                         </div>
                     `;
                 } else {
                     alertBox.innerHTML = `
                         <div class="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-seven-green dark:text-emerald-300 font-semibold flex items-center gap-1.5">
                             <i class="fa-solid fa-shield-check"></i>
-                            <span>ตารางเวรผ่านเกณฑ์ครบทุกข้อ: ผลัดดึกมีพนักงาน ≥ 2 คนทุกคืน, มีผู้ช่วยฯ คุมครบทุกผลัด และไม่มีการควงกะข้ามคืน</span>
+                            <span>สัปดาห์ที่ 1 ผ่านกฎครบทุกข้อ: ผู้ช่วยฯ คุมดึกทุกคืน (ดึก → บ่าย → เช้า), ผลัดดึก ≥ 2 คนทุกคืน, ทวิภาคี &lt;18 เฉพาะเช้า จ–ศ และไม่ควง ดึก→เช้า</span>
                         </div>
                     `;
                 }
@@ -1547,11 +1826,27 @@
         }
 
         function cycleEmployeeShift(empIdx, dayIdx) {
-            if (!rosterPlan[empIdx]) return;
-            const order = [0, 1, 2, -1];
-            const cur = rosterPlan[empIdx].days[dayIdx];
-            const next = order[(order.indexOf(cur) + 1) % order.length];
-            rosterPlan[empIdx].days[dayIdx] = next;
+            const emp = rosterPlan[empIdx];
+            if (!emp || emp.empType === 'pt4') {
+                if (emp && emp.empType === 'pt4') showToast('พนักงาน p/t4 ล็อกช่องว่าง ไม่นับรวมในโครงสร้างกะหลัก');
+                return;
+            }
+
+            if (emp.empType === 'intern') {
+                if (dayIdx >= 5) {
+                    showToast('นักศึกษาทวิภาคี (<18 ปี) ต้องหยุดวันเสาร์–อาทิตย์ ทุกสัปดาห์');
+                    return;
+                }
+                emp.days[dayIdx] = emp.days[dayIdx] === 0 ? -1 : 0;
+            } else if (emp.empType === 'mgr') {
+                emp.days[dayIdx] = emp.days[dayIdx] === 0 ? -1 : 0;
+            } else {
+                const order = [0, 1, 2, -1];
+                const cur = emp.days[dayIdx];
+                emp.days[dayIdx] = order[(order.indexOf(cur) + 1) % order.length];
+            }
+
+            generateMonthlyPlanFromWeek1();
             refreshAll();
         }
 
@@ -1565,18 +1860,34 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ชื่อพนักงานจริง</label>
                     <input type="text" id="edit-emp-name-input" value="${emp.name}" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-sm">
-                    <div class="text-[11px] text-slate-500 mt-1">ตำแหน่ง: ${emp.role}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ประเภท / ตำแหน่งตามกฎ</label>
+                        <select id="edit-emp-type-select" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold">
+                            <option value="mgr" ${emp.empType === 'mgr' ? 'selected' : ''}>ผู้จัดการร้าน (เช้าอย่างเดียว)</option>
+                            <option value="asst" ${emp.empType === 'asst' ? 'selected' : ''}>ผู้ช่วยผู้จัดการร้าน (เน้นดึกก่อน)</option>
+                            <option value="regular" ${emp.empType === 'regular' ? 'selected' : ''}>พนักงานประจำ</option>
+                            <option value="intern" ${emp.empType === 'intern' ? 'selected' : ''}>นักศึกษาทวิภาคี (&lt;18 ปี)</option>
+                            <option value="pt4" ${emp.empType === 'pt4' ? 'selected' : ''}>p/t4 • ไม่นับในกะ (ล็อกช่องว่าง)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">คำอธิบายหน้าที่</label>
+                        <input type="text" id="edit-emp-role-input" value="${emp.role}" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold">
+                    </div>
                 </div>
                 <div class="space-y-2">
-                    <div class="text-xs font-bold text-slate-700 dark:text-slate-300">เลือกกะการทำงานทั้ง 7 วัน (จันทร์ - อาทิตย์)</div>
+                    <div class="text-xs font-bold text-slate-700 dark:text-slate-300">ตารางกะสัปดาห์ที่ 1 (จันทร์ - อาทิตย์)</div>
                     ${state.dayFullNames.map((dName, dIdx) => `
                         <div class="flex items-center justify-between gap-2 text-xs">
                             <span class="font-semibold w-24">${dName}</span>
                             <select id="edit-emp-day-${dIdx}" class="flex-1 px-2.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold">
-                                <option value="0" ${emp.days[dIdx] === 0 ? 'selected' : ''}>กะ 1 เช้า (06:00-15:00)</option>
-                                <option value="1" ${emp.days[dIdx] === 1 ? 'selected' : ''}>กะ 2 บ่าย (14:00-23:00)</option>
-                                <option value="2" ${emp.days[dIdx] === 2 ? 'selected' : ''}>กะ 3 ดึก (22:00-07:00)</option>
-                                <option value="-1" ${emp.days[dIdx] === -1 ? 'selected' : ''}>OFF (วันหยุดประจำสัปดาห์)</option>
+                                <option value="0" ${emp.days[dIdx] === 0 ? 'selected' : ''}>กะ 1 เช้า (06:30–15:30)</option>
+                                <option value="1" ${emp.days[dIdx] === 1 ? 'selected' : ''}>กะ 2 บ่าย (13:30–22:30)</option>
+                                <option value="2" ${emp.days[dIdx] === 2 ? 'selected' : ''}>กะ 3 ดึก (22:00–07:00)</option>
+                                <option value="-1" ${emp.days[dIdx] === -1 ? 'selected' : ''}>OFF / H (วันหยุด)</option>
+                                <option value="-2" ${emp.days[dIdx] === -2 ? 'selected' : ''}>เว้นว่าง (P/T 4)</option>
                             </select>
                         </div>
                     `).join('')}
@@ -1598,32 +1909,452 @@
             const emp = rosterPlan[empIdx];
             if (!emp) return;
             const nameVal = document.getElementById('edit-emp-name-input')?.value.trim();
+            const roleVal = document.getElementById('edit-emp-role-input')?.value.trim();
+            const typeVal = document.getElementById('edit-emp-type-select')?.value || emp.empType;
+
             if (nameVal) emp.name = nameVal;
-            for (let d = 0; d < 7; d++) {
-                const sel = document.getElementById(`edit-emp-day-${d}`);
-                if (sel) emp.days[d] = Number(sel.value);
+            if (roleVal) emp.role = roleVal;
+            emp.empType = typeVal;
+
+            if (typeVal === 'pt4') {
+                emp.days = [-2, -2, -2, -2, -2, -2, -2];
+                rosterPlan.splice(empIdx, 1);
+                rosterPlan.push(emp);
+            } else if (typeVal === 'intern') {
+                emp.days = [0, 0, 0, 0, 0, -1, -1];
+            } else if (typeVal === 'mgr') {
+                for (let d = 0; d < 7; d++) {
+                    const v = Number(document.getElementById(`edit-emp-day-${d}`)?.value);
+                    emp.days[d] = v === -1 ? -1 : 0;
+                }
+            } else {
+                for (let d = 0; d < 7; d++) {
+                    const sel = document.getElementById(`edit-emp-day-${d}`);
+                    if (sel) emp.days[d] = Number(sel.value);
+                }
             }
+
             closeEditEmpModal();
+            generateMonthlyPlanFromWeek1();
             refreshAll();
-            showToast(`บันทึกข้อมูลของ "${emp.name}" เรียบร้อยแล้ว`);
+            showToast(`บันทึกข้อมูลของ "${emp.name}" และอัปเดตตาราง 5 สัปดาห์เรียบร้อยแล้ว`);
         }
 
+        // =========================================================================
+        // ตารางที่ 4: วิธีทำตารางรายเดือนต่อเนื่อง (รวม 5 สัปดาห์ / 35 วัน)
+        // =========================================================================
+        function setMonthlyMode(mode) {
+            state.monthlyMode = mode;
+            generateMonthlyPlanFromWeek1();
+            refreshAll();
+            showToast(mode === 'rotate'
+                ? 'เปลี่ยนเป็นแบบที่ 2: หมุนเวียนต่อเนื่อง 4 สัปดาห์ (แนะนำ)'
+                : 'เปลี่ยนเป็นแบบที่ 1: ทำซ้ำตารางรายสัปดาห์ทั้ง 5 สัปดาห์');
+        }
+
+        function resetMonthlyPlan() {
+            generateMonthlyPlanFromWeek1();
+            refreshAll();
+            showToast('รีเซ็ตแผนต่อเนื่อง 5 สัปดาห์ (35 วัน) จากตารางที่ 3 เรียบร้อยแล้ว');
+        }
+
+        function generateMonthlyPlanFromWeek1() {
+            if (!Array.isArray(rosterPlan) || rosterPlan.length === 0) return;
+
+            const weeklyRecs = Array.from({ length: 7 }, (_, d) => getRecommendedForDay(d));
+
+            // 1. ดึงสัปดาห์ที่ 1 (วันที่ 0..6) มาวางด้านหน้าสุดแบบตรงกัน 100%
+            const plan = rosterPlan.map(emp => {
+                const days35 = Array(35).fill(-1);
+                for (let d = 0; d < 7; d++) {
+                    days35[d] = emp.days[d];
+                }
+                return {
+                    name: emp.name,
+                    role: emp.role,
+                    empType: emp.empType,
+                    week1Days: [...emp.days],
+                    days35
+                };
+            });
+
+            // โหมดแบบที่ 1: ทำซ้ำตารางรายสัปดาห์ทั้ง 5 สัปดาห์
+            if (state.monthlyMode === 'repeat') {
+                plan.forEach(emp => {
+                    for (let w = 1; w < 5; w++) {
+                        for (let d = 0; d < 7; d++) {
+                            emp.days35[w * 7 + d] = emp.week1Days[d];
+                        }
+                    }
+                });
+                monthlyPlan = plan;
+                return;
+            }
+
+            // โหมดแบบที่ 2: หมุนเวียนต่อเนื่อง 4 สัปดาห์ (สัปดาห์ที่ 2–5: วันที่ 7..34)
+            plan.forEach(emp => {
+                if (emp.empType === 'pt4') {
+                    emp.days35.fill(-2);
+                    return;
+                }
+                for (let w = 1; w < 5; w++) {
+                    for (let d = 0; d < 7; d++) {
+                        const baseCode = emp.week1Days[d];
+                        if (emp.empType === 'mgr') {
+                            emp.days35[w * 7 + d] = baseCode === -1 ? -1 : 0;
+                        } else if (emp.empType === 'intern') {
+                            emp.days35[w * 7 + d] = d >= 5 ? -1 : 0;
+                        } else {
+                            emp.days35[w * 7 + d] = baseCode === -1 ? -1 : -99;
+                        }
+                    }
+                }
+            });
+
+            const nightCountAcc = plan.map(emp => emp.week1Days.filter(c => c === 2).length);
+            const lastNightDay = plan.map(emp => {
+                for (let d = 6; d >= 0; d--) {
+                    if (emp.week1Days[d] === 2) return d;
+                }
+                return -10;
+            });
+
+            for (let dayAbs = 7; dayAbs < 35; dayAbs++) {
+                const dow = dayAbs % 7;
+                const recS1 = weeklyRecs[dow][0].recommended;
+                const recS2 = weeklyRecs[dow][1].recommended;
+
+                const nightAssigned = new Set();
+
+                // A1: ผู้ช่วยผู้จัดการร้าน (asst) ลงกะดึก 1 คนทุกคืน
+                const asstIndices = plan.map((e, i) => e.empType === 'asst' ? i : -1).filter(i => i !== -1);
+                if (asstIndices.length > 0) {
+                    const availAssts = asstIndices.filter(i => plan[i].days35[dayAbs] !== -1);
+                    if (availAssts.length > 0) {
+                        availAssts.sort((a, b) => {
+                            const contA = plan[a].days35[dayAbs - 1] === 2 ? 0 : 1;
+                            const contB = plan[b].days35[dayAbs - 1] === 2 ? 0 : 1;
+                            if (contA !== contB) return contA - contB;
+                            return nightCountAcc[a] - nightCountAcc[b];
+                        });
+                        const chosenAsst = availAssts[0];
+                        plan[chosenAsst].days35[dayAbs] = 2;
+                        nightAssigned.add(chosenAsst);
+                        nightCountAcc[chosenAsst]++;
+                        lastNightDay[chosenAsst] = dayAbs;
+                    }
+                }
+
+                // A2: พนักงานประจำ (regular) ลงกะดึกเสริมให้ครบขั้นต่ำ 2 คนทุกคืน
+                const minNightTotal = Math.max(2, weeklyRecs[dow][2].recommended);
+                while (nightAssigned.size < minNightTotal) {
+                    const availRegs = plan
+                        .map((e, i) => ({ e, i }))
+                        .filter(({ e, i }) => e.empType === 'regular' && e.days35[dayAbs] === -99 && !nightAssigned.has(i));
+
+                    if (availRegs.length === 0) break;
+
+                    availRegs.sort((a, b) => {
+                        const contA = a.e.days35[dayAbs - 1] === 2 ? 0 : 1;
+                        const contB = b.e.days35[dayAbs - 1] === 2 ? 0 : 1;
+                        if (contA !== contB) return contA - contB;
+                        const offNextA = (dayAbs + 1 < 35 && a.e.days35[dayAbs + 1] === -1) ? 0 : 1;
+                        const offNextB = (dayAbs + 1 < 35 && b.e.days35[dayAbs + 1] === -1) ? 0 : 1;
+                        if (offNextA !== offNextB) return offNextA - offNextB;
+                        if (nightCountAcc[a.i] !== nightCountAcc[b.i]) return nightCountAcc[a.i] - nightCountAcc[b.i];
+                        return lastNightDay[a.i] - lastNightDay[b.i];
+                    });
+
+                    const chosenReg = availRegs[0].i;
+                    plan[chosenReg].days35[dayAbs] = 2;
+                    nightAssigned.add(chosenReg);
+                    nightCountAcc[chosenReg]++;
+                    lastNightDay[chosenReg] = dayAbs;
+                }
+
+                // ขั้น B: จัดผู้ช่วยฯ ที่เหลือตามลำดับ ดึก -> บ่าย -> เช้า
+                let s1Count = 0;
+                let s2Count = 0;
+                plan.forEach(emp => {
+                    if (emp.days35[dayAbs] === 0) s1Count++;
+                    if (emp.days35[dayAbs] === 1) s2Count++;
+                });
+
+                const availOtherAssts = asstIndices.filter(idx => plan[idx].days35[dayAbs] === -99);
+                availOtherAssts.forEach((idx, orderIdx) => {
+                    const prevShift = plan[idx].days35[dayAbs - 1];
+                    if (asstIndices.length === 2) {
+                        plan[idx].days35[dayAbs] = 1;
+                        s2Count++;
+                    } else {
+                        if (prevShift === 2 || orderIdx === 0) {
+                            plan[idx].days35[dayAbs] = 1;
+                            s2Count++;
+                        } else {
+                            plan[idx].days35[dayAbs] = 0;
+                            s1Count++;
+                        }
+                    }
+                });
+
+                // ขั้น C: เกลี่ยพนักงานประจำที่เหลือลง กะเช้า (0) และ กะบ่าย (1)
+                const remRegulars = plan
+                    .map((emp, idx) => ({ emp, idx }))
+                    .filter(({ emp }) => emp.empType === 'regular' && emp.days35[dayAbs] === -99);
+
+                remRegulars.forEach(({ emp }) => {
+                    const prevShift = emp.days35[dayAbs - 1];
+                    if (prevShift === 2) {
+                        emp.days35[dayAbs] = 1;
+                        s2Count++;
+                        return;
+                    }
+
+                    const needS1 = recS1 - s1Count;
+                    const needS2 = recS2 - s2Count;
+                    const prefShift = emp.week1Days[dow] === 1 ? 1 : 0;
+
+                    if (needS1 > needS2) {
+                        emp.days35[dayAbs] = 0;
+                        s1Count++;
+                    } else if (needS2 > needS1) {
+                        emp.days35[dayAbs] = 1;
+                        s2Count++;
+                    } else {
+                        emp.days35[dayAbs] = prefShift;
+                        if (prefShift === 0) s1Count++;
+                        else s2Count++;
+                    }
+                });
+            }
+
+            monthlyPlan = plan;
+        }
+
+        function renderMonthlyTable() {
+            const weekHeader = document.getElementById('monthly-week-header');
+            const dayHeader = document.getElementById('monthly-day-header');
+            const tbody = document.getElementById('monthly-table-body');
+            const tfoot = document.getElementById('monthly-tfoot');
+            const alertBox = document.getElementById('monthly-alert-box');
+            if (!weekHeader || !dayHeader || !tbody || !tfoot) return;
+
+            weekHeader.innerHTML = `
+                <th rowspan="2" class="py-2.5 px-3 font-bold text-left bg-slate-900 border-r border-slate-700 sticky left-0 z-10 min-w-[165px]">
+                    รายชื่อพนักงาน / ตำแหน่ง
+                </th>
+                ${[1, 2, 3, 4, 5].map(w => `
+                    <th colspan="7" class="py-1.5 px-2 text-center font-bold border-r border-slate-700 ${w === 1 ? 'bg-seven-green text-white' : 'bg-slate-800 text-slate-100'}">
+                        สัปดาห์ที่ ${w} ${w === 1 ? '(ดึงจากตารางที่ 3)' : '(วันที่ ' + ((w - 1) * 7 + 1) + '–' + (w * 7) + ')'}
+                    </th>
+                `).join('')}
+                <th rowspan="2" class="py-2.5 px-2 text-center font-bold bg-slate-900 min-w-[115px]">
+                    สรุป 35 วัน<br><span class="text-[10px] font-normal text-slate-300">(ช / บ / ด / OFF)</span>
+                </th>
+            `;
+
+            dayHeader.innerHTML = Array.from({ length: 35 }, (_, dayAbs) => {
+                const dow = dayAbs % 7;
+                const dateInfo = getScheduleDateInfo(dayAbs);
+                const isHoliday = Boolean(dateInfo.holidayName);
+                const isWeekend = dow >= 4 || isHoliday;
+                const isWeekEndBorder = dow === 6;
+                return `
+                    <th class="py-1.5 px-1 text-center font-bold min-w-[36px] ${isHoliday ? 'bg-rose-50 dark:bg-rose-950/40' : ''} ${isWeekEndBorder ? 'border-r-2 border-slate-400 dark:border-slate-600' : 'border-r border-slate-200 dark:border-slate-700'} ${isWeekend ? 'text-seven-red' : ''}" title="${dateInfo.holidayName ? `${dateInfo.shortDate}: ${dateInfo.holidayName}` : dateInfo.shortDate}">
+                        <div>${state.dayShortNames[dow]}</div>
+                        <div class="text-[9px] font-normal ${isHoliday ? 'text-seven-red font-bold' : 'text-slate-400'}">${dateInfo.shortDate}</div>
+                    </th>
+                `;
+            }).join('');
+
+            const cellMeta = {
+                0: { short: 'ช', cls: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900' },
+                1: { short: 'บ', cls: 'bg-orange-100 hover:bg-orange-200 text-orange-900' },
+                2: { short: 'ด', cls: 'bg-indigo-100 hover:bg-indigo-200 text-indigo-900' },
+                '-1': { short: 'OFF', cls: 'bg-slate-200 hover:bg-slate-300 text-slate-700' },
+                '-2': { short: '', cls: 'bg-slate-50 dark:bg-slate-900 cursor-not-allowed' }
+            };
+
+            tbody.innerHTML = monthlyPlan.map((emp, empIdx) => {
+                const isPT4 = emp.empType === 'pt4';
+                let c0 = 0, c1 = 0, c2 = 0, cOff = 0;
+                if (!isPT4) {
+                    emp.days35.forEach(c => {
+                        if (c === 0) c0++;
+                        else if (c === 1) c1++;
+                        else if (c === 2) c2++;
+                        else if (c === -1) cOff++;
+                    });
+                }
+
+                return `
+                    <tr class="${isPT4 ? 'bg-amber-50/30 dark:bg-slate-800/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}">
+                        <td class="py-1.5 px-3 font-semibold bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 sticky left-0 z-10">
+                            <div class="text-slate-900 dark:text-white truncate max-w-[165px]" title="${emp.name}">
+                                ${emp.name} ${isPT4 ? '<span class="px-1 py-0.2 rounded bg-amber-100 text-amber-800 text-[8px] font-bold">p/t4 • ไม่นับในกะ</span>' : ''}
+                            </div>
+                            <div class="text-[9px] text-slate-500 truncate max-w-[165px]">${emp.role}</div>
+                        </td>
+                        ${emp.days35.map((code, dayAbs) => {
+                            const displayCode = isPT4 ? -2 : code;
+                            const m = cellMeta[displayCode] || cellMeta['-1'];
+                            const isWeekEndBorder = (dayAbs % 7) === 6;
+                            return `
+                                <td class="p-0.5 text-center ${isWeekEndBorder ? 'border-r-2 border-slate-300 dark:border-slate-600' : 'border-r border-slate-200 dark:border-slate-800'}">
+                                    <button onclick="cycleMonthlyShift(${empIdx}, ${dayAbs})" ${isPT4 ? 'disabled title="พนักงาน p/t4 ล็อกช่องว่าง ไม่นับในกะ"' : ''} class="w-full py-1 rounded text-[10px] font-bold transition ${isPT4 ? 'cursor-not-allowed' : 'cursor-pointer'} ${m.cls}">
+                                        ${m.short || '&nbsp;'}
+                                    </button>
+                                </td>
+                            `;
+                        }).join('')}
+                        <td class="py-1.5 px-2 text-center text-[10px] font-bold bg-slate-50 dark:bg-slate-800/50">
+                            ${isPT4
+                                ? '<span class="text-amber-700 text-[9px]">p/t4 • ไม่นับในกะ</span>'
+                                : `<span class="text-emerald-700">${c0}</span>/<span class="text-orange-600">${c1}</span>/<span class="text-indigo-600">${c2}</span> • <span class="text-slate-600">OFF ${cOff}</span>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const daily35 = Array.from({ length: 35 }, () => ({ s1: 0, s2: 0, s3: 0, off: 0, asstS1: 0, asstS2: 0, asstS3: 0 }));
+            const mWarnings = [];
+            const mAsstMembers = monthlyPlan.filter(e => e.empType === 'asst');
+
+            monthlyPlan.forEach(emp => {
+                if (emp.empType === 'pt4') return;
+                let streak = 0;
+                emp.days35.forEach((c, dayAbs) => {
+                    if (c === 0) {
+                        daily35[dayAbs].s1++;
+                        if (emp.empType === 'asst') daily35[dayAbs].asstS1++;
+                    } else if (c === 1) {
+                        daily35[dayAbs].s2++;
+                        if (emp.empType === 'asst') daily35[dayAbs].asstS2++;
+                    } else if (c === 2) {
+                        daily35[dayAbs].s3++;
+                        if (emp.empType === 'asst') daily35[dayAbs].asstS3++;
+                    } else if (c === -1) {
+                        daily35[dayAbs].off++;
+                    }
+
+                    if (c >= 0) {
+                        streak++;
+                        if (streak > 6) {
+                            mWarnings.push(`<strong>${emp.name}</strong> ทำงานติดต่อกันเกิน 6 วันติด (ถึงวันที่ ${dayAbs + 1})`);
+                        }
+                    } else {
+                        streak = 0;
+                    }
+
+                    if (dayAbs > 0 && emp.days35[dayAbs - 1] === 2 && c === 0) {
+                        mWarnings.push(`<strong>${emp.name}</strong> ควงกะ ดึก→เช้า ระหว่างวันที่ ${dayAbs} ต่อวันที่ ${dayAbs + 1}`);
+                    }
+                });
+            });
+
+            daily35.forEach((ds, dayAbs) => {
+                if (ds.s3 < 2) {
+                    mWarnings.push(`วันที่ ${dayAbs + 1} (สัปดาห์ที่ ${Math.floor(dayAbs / 7) + 1}) กะดึกมีเพียง <strong>${ds.s3} คน</strong> (ต้องมีอย่างน้อย 2 คนทุกคืน)`);
+                }
+                if (mAsstMembers.length > 0 && ds.asstS3 < 1) {
+                    mWarnings.push(`วันที่ ${dayAbs + 1} <strong>ขาดผู้ช่วยฯ คุมกะดึก</strong> (ต้องมีผู้ช่วยฯ กะดึกอย่างน้อย 1 คนทุกคืน)`);
+                }
+                if (mAsstMembers.length === 2 && ds.asstS1 > 0 && ds.asstS2 === 0) {
+                    mWarnings.push(`วันที่ ${dayAbs + 1} มีผู้ช่วยฯ 2 คน แต่จัดผู้ช่วยฯ ลงกะเช้าก่อนกะบ่าย (ต้องเรียง ดึก → บ่าย → เช้า)`);
+                }
+            });
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="py-2 px-3 bg-slate-100 dark:bg-slate-800 border-r border-slate-300 dark:border-slate-600 sticky left-0 z-10">
+                        รวมคนเข้ากะ<br><span class="text-[9px] font-normal text-slate-500">(ช / บ / ด)</span>
+                    </td>
+                    ${daily35.map((ds, dayAbs) => {
+                        const isWeekEndBorder = (dayAbs % 7) === 6;
+                        return `
+                            <td class="py-1.5 px-0.5 text-center text-[9px] leading-tight ${isWeekEndBorder ? 'border-r-2 border-slate-400 dark:border-slate-600' : 'border-r border-slate-200 dark:border-slate-700'}">
+                                <div class="text-seven-green">${ds.s1}/${ds.s2}/${ds.s3}</div>
+                                <div class="text-slate-400 font-normal">H:${ds.off}</div>
+                            </td>
+                        `;
+                    }).join('')}
+                    <td class="py-2 px-2 text-center text-[10px] text-seven-green">ครบ 35 วัน</td>
+                </tr>
+            `;
+
+            if (alertBox) {
+                if (mWarnings.length > 0) {
+                    alertBox.innerHTML = `
+                        <div class="p-3 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-seven-red dark:text-rose-300 space-y-1">
+                            <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i><span>ตรวจสอบพบจุดที่ควรระวังในแผน 35 วัน:</span></div>
+                            <ul class="list-disc list-inside text-[11px]">${[...new Set(mWarnings)].slice(0, 6).map(w => `<li>${w}</li>`).join('')}</ul>
+                        </div>
+                    `;
+                } else {
+                    alertBox.innerHTML = `
+                        <div class="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-seven-green dark:text-emerald-300 font-semibold flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>แผนต่อเนื่อง 5 สัปดาห์ (35 วัน) ผ่านกฎครบทุกข้อ: หยุดคนละ 5 วันเท่ากัน, ไม่ทำงานเกิน 6 วันติด, กะดึก ≥ 2 คนทุกคืน และไม่ควง ดึก→เช้า</span>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function cycleMonthlyShift(empIdx, dayAbs) {
+            const emp = monthlyPlan[empIdx];
+            if (!emp || emp.empType === 'pt4') {
+                if (emp && emp.empType === 'pt4') showToast('พนักงาน p/t4 ล็อกช่องว่าง ไม่นับรวมในโครงสร้างกะหลัก');
+                return;
+            }
+
+            const dow = dayAbs % 7;
+            if (emp.empType === 'intern') {
+                if (dow >= 5) {
+                    showToast('นักศึกษาทวิภาคี (<18 ปี) ต้องหยุดวันเสาร์–อาทิตย์ ทุกสัปดาห์');
+                    return;
+                }
+                emp.days35[dayAbs] = emp.days35[dayAbs] === 0 ? -1 : 0;
+            } else if (emp.empType === 'mgr') {
+                emp.days35[dayAbs] = emp.days35[dayAbs] === 0 ? -1 : 0;
+            } else {
+                const order = [0, 1, 2, -1];
+                const cur = emp.days35[dayAbs];
+                emp.days35[dayAbs] = order[(order.indexOf(cur) + 1) % order.length];
+            }
+
+            if (dayAbs < 7 && rosterPlan[empIdx]) {
+                rosterPlan[empIdx].days[dayAbs] = emp.days35[dayAbs];
+            }
+
+            refreshAll();
+        }
+
+        // =========================================================================
+        // Print Preview & LINE Share Helpers (รองรับทั้งตาราง 7 วัน และตาราง 5 สัปดาห์)
+        // =========================================================================
         function openPrintPreview() {
+            state.activePrintType = 'weekly';
             const modal = document.getElementById('print-modal');
             const area = document.getElementById('print-preview-area');
+            const titleEl = document.getElementById('print-modal-title');
             if (!modal || !area) return;
+            if (titleEl) titleEl.textContent = 'ตัวอย่างก่อนพิมพ์: ตารางจัดกะรายสัปดาห์ (7 วัน)';
 
-            const shiftLabels = { 0: 'เช้า', 1: 'บ่าย', 2: 'ดึก', '-1': 'OFF' };
+            const shiftLabels = { 0: 'เช้า (ช)', 1: 'บ่าย (บ)', 2: 'ดึก (ด)', '-1': 'OFF', '-2': '' };
             const shiftColors = {
                 0: 'bg-emerald-50 text-emerald-900',
                 1: 'bg-orange-50 text-orange-900',
                 2: 'bg-indigo-50 text-indigo-900',
-                '-1': 'bg-slate-100 text-slate-500'
+                '-1': 'bg-slate-100 text-slate-500',
+                '-2': 'bg-white text-slate-300'
             };
             const branchName = BRANCH_DATA[state.selectedBranch]?.name || state.selectedBranch;
 
             const dailySummary = Array.from({ length: 7 }, () => ({ s1: 0, s2: 0, s3: 0, off: 0 }));
             rosterPlan.forEach(emp => {
+                if (emp.empType === 'pt4') return;
                 emp.days.forEach((c, dIdx) => {
                     if (c === 0) dailySummary[dIdx].s1++;
                     else if (c === 1) dailySummary[dIdx].s2++;
@@ -1635,8 +2366,8 @@
             area.innerHTML = `
                 <div class="mb-2.5 flex flex-wrap items-center justify-between gap-1 border-b border-slate-300 pb-2">
                     <div>
-                        <h3 class="text-xs sm:text-base font-bold text-slate-900">ตารางจัดกะและสลับวันหยุด 7-Eleven สาขา ${branchName}</h3>
-                        <p class="text-[10px] sm:text-xs text-slate-600">พนักงานทั้งหมด ${rosterPlan.length} คน (ทำงาน 6 วัน / หยุด 1 วัน)</p>
+                        <h3 class="text-xs sm:text-base font-bold text-slate-900">ตารางจัดกะและสลับวันหยุด 7-Eleven สาขา ${branchName} (สัปดาห์ที่ 1)</h3>
+                        <p class="text-[10px] sm:text-xs text-slate-600">ช: 06:30–15:30 • บ: 13:30–22:30 • ด: 22:00–07:00 • OFF: วันหยุดประจำสัปดาห์</p>
                     </div>
                     <div class="text-[10px] sm:text-xs text-slate-500">พิมพ์เมื่อ: ${new Date().toLocaleDateString('th-TH')}</div>
                 </div>
@@ -1653,18 +2384,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${rosterPlan.map(emp => `
-                            <tr>
-                                <td class="border border-slate-400 py-1 px-1.5 sm:px-2 font-semibold whitespace-nowrap">
-                                    ${emp.name} <span class="text-[9px] sm:text-[10px] text-slate-500 font-normal">(${emp.role.split('/')[0].trim()})</span>
-                                </td>
-                                ${emp.days.map(c => `<td class="border border-slate-400 py-1 px-1 text-center font-bold ${shiftColors[c]}">${shiftLabels[c]}</td>`).join('')}
-                            </tr>
-                        `).join('')}
+                        ${rosterPlan.map(emp => {
+                            const isPT4 = emp.empType === 'pt4';
+                            return `
+                                <tr>
+                                    <td class="border border-slate-400 py-1 px-1.5 sm:px-2 font-semibold whitespace-nowrap">
+                                        ${emp.name} <span class="text-[9px] sm:text-[10px] text-slate-500 font-normal">(${isPT4 ? 'p/t4 • ไม่นับในกะ' : emp.role})</span>
+                                    </td>
+                                    ${emp.days.map(c => `<td class="border border-slate-400 py-1 px-1 text-center font-bold ${shiftColors[isPT4 ? '-2' : c]}">${isPT4 ? '' : shiftLabels[c]}</td>`).join('')}
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                     <tfoot>
                         <tr class="bg-slate-100 font-bold border-t-2 border-slate-500">
-                            <td class="border border-slate-400 py-1.5 px-1.5 sm:px-2 text-left whitespace-nowrap">สรุป (เช้า/บ่าย/ดึก)</td>
+                            <td class="border border-slate-400 py-1.5 px-1.5 sm:px-2 text-left whitespace-nowrap">สรุป (ช / บ / ด)</td>
                             ${dailySummary.map(ds => `
                                 <td class="border border-slate-400 py-1.5 px-0.5 text-center leading-tight">
                                     <div class="text-seven-green">${ds.s1}/${ds.s2}/${ds.s3}</div>
@@ -1673,6 +2407,66 @@
                             `).join('')}
                         </tr>
                     </tfoot>
+                </table>
+            `;
+
+            modal.classList.remove('hidden');
+        }
+
+        function openMonthlyPrintPreview() {
+            state.activePrintType = 'monthly';
+            const modal = document.getElementById('print-modal');
+            const area = document.getElementById('print-preview-area');
+            const titleEl = document.getElementById('print-modal-title');
+            if (!modal || !area) return;
+            if (titleEl) titleEl.textContent = 'ตัวอย่างก่อนพิมพ์: ตารางเวรต่อเนื่องรายเดือน 5 สัปดาห์ (35 วัน)';
+
+            const shortLabels = { 0: 'ช', 1: 'บ', 2: 'ด', '-1': 'OFF', '-2': '' };
+            const shortColors = {
+                0: 'bg-emerald-50 text-emerald-900',
+                1: 'bg-orange-50 text-orange-900',
+                2: 'bg-indigo-50 text-indigo-900',
+                '-1': 'bg-slate-200 text-slate-700',
+                '-2': 'bg-white'
+            };
+            const branchName = BRANCH_DATA[state.selectedBranch]?.name || state.selectedBranch;
+            const modeLabel = state.monthlyMode === 'rotate' ? 'แบบที่ 2: หมุนเวียนต่อเนื่อง 4 สัปดาห์' : 'แบบที่ 1: ทำซ้ำตารางรายสัปดาห์';
+
+            area.innerHTML = `
+                <div class="mb-2 flex flex-wrap items-center justify-between gap-1 border-b border-slate-300 pb-1.5">
+                    <div>
+                        <h3 class="text-xs sm:text-sm font-bold text-slate-900">ตารางเวรต่อเนื่องรายเดือน 5 สัปดาห์ (35 วัน) — 7-Eleven สาขา ${branchName}</h3>
+                        <p class="text-[10px] text-slate-600">${modeLabel} • ช: 06:30–15:30 | บ: 13:30–22:30 | ด: 22:00–07:00 | OFF: วันหยุด</p>
+                    </div>
+                    <div class="text-[10px] text-slate-500">พิมพ์เมื่อ: ${new Date().toLocaleDateString('th-TH')}</div>
+                </div>
+                <table class="w-full border-collapse border border-slate-400 text-[9px]">
+                    <thead>
+                        <tr class="bg-slate-200">
+                            <th rowspan="2" class="border border-slate-400 py-1 px-1.5 text-left whitespace-nowrap">ชื่อพนักงาน / ตำแหน่ง</th>
+                            ${[1, 2, 3, 4, 5].map(w => `<th colspan="7" class="border border-slate-400 py-0.5 text-center font-bold">สัปดาห์ที่ ${w}</th>`).join('')}
+                            <th rowspan="2" class="border border-slate-400 py-1 px-1 text-center">ช/บ/ด/OFF</th>
+                        </tr>
+                        <tr class="bg-slate-100">
+                            ${Array.from({ length: 35 }, (_, d) => `<th class="border border-slate-400 py-0.5 px-0.5 text-center ${d % 7 >= 4 ? 'text-seven-red' : ''}">${state.dayShortNames[d % 7]}<br>${d + 1}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${monthlyPlan.map(emp => {
+                            const isPT4 = emp.empType === 'pt4';
+                            let c0 = 0, c1 = 0, c2 = 0, cOff = 0;
+                            if (!isPT4) {
+                                emp.days35.forEach(c => { if (c === 0) c0++; else if (c === 1) c1++; else if (c === 2) c2++; else if (c === -1) cOff++; });
+                            }
+                            return `
+                                <tr>
+                                    <td class="border border-slate-400 py-0.5 px-1.5 font-semibold whitespace-nowrap">${emp.name} <span class="text-[8px] text-slate-500">(${isPT4 ? 'p/t4 • ไม่นับในกะ' : emp.role})</span></td>
+                                    ${emp.days35.map(c => `<td class="border border-slate-400 py-0.5 px-0.5 text-center font-bold ${shortColors[isPT4 ? '-2' : c]}">${isPT4 ? '' : shortLabels[c]}</td>`).join('')}
+                                    <td class="border border-slate-400 py-0.5 px-1 text-center whitespace-nowrap font-semibold">${isPT4 ? 'p/t4 • ไม่นับในกะ' : `${c0}/${c1}/${c2}/${cOff}`}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
                 </table>
             `;
 
@@ -1689,7 +2483,7 @@
             if (!area) return;
 
             try {
-                const printWin = window.open('', '_blank', 'width=1024,height=768');
+                const printWin = window.open('', '_blank', 'width=1200,height=800');
                 if (printWin) {
                     printWin.document.open();
                     printWin.document.write(`
@@ -1701,10 +2495,10 @@
                             <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
                             <script src="https://cdn.tailwindcss.com"><\/script>
                             <style>
-                                @page { size: A4 landscape; margin: 10mm; }
-                                body { font-family: 'Prompt', sans-serif; background: #fff; color: #000; padding: 12px; }
+                                @page { size: A4 landscape; margin: 8mm; }
+                                body { font-family: 'Prompt', sans-serif; background: #fff; color: #000; padding: 8px; }
                                 table { width: 100%; border-collapse: collapse; }
-                                th, td { border: 1px solid #64748b !important; padding: 6px 8px; }
+                                th, td { border: 1px solid #64748b !important; }
                             </style>
                         </head>
                         <body>
@@ -1730,14 +2524,36 @@
             window.print();
         }
 
-        function copyRosterForLine() {
-            const shiftLabels = { 0: 'เช้า', 1: 'บ่าย', 2: 'ดึก', '-1': 'OFF' };
+        function copyActivePrintForLine() {
+            const shiftLabels = { 0: 'ช', 1: 'บ', 2: 'ด', '-1': 'OFF', '-2': '-' };
             const branchName = BRANCH_DATA[state.selectedBranch]?.name || state.selectedBranch;
-            const lines = [`ตารางเวร 7-Eleven สาขา ${branchName} (${rosterPlan.length} คน)`];
-            rosterPlan.forEach(emp => {
-                const rowStr = emp.days.map((c, i) => `${state.dayShortNames[i]}:${shiftLabels[c]}`).join(' | ');
-                lines.push(`• ${emp.name}: ${rowStr}`);
-            });
+            const lines = [];
+
+            if (state.activePrintType === 'monthly') {
+                lines.push(`ตารางเวร 5 สัปดาห์ (35 วัน) สาขา ${branchName}`);
+                monthlyPlan.forEach(emp => {
+                    if (emp.empType === 'pt4') {
+                        lines.push(`• ${emp.name} (p/t4): `);
+                        return;
+                    }
+                    const weeksStr = [0, 1, 2, 3, 4].map(w => {
+                        const s = emp.days35.slice(w * 7, w * 7 + 7).map(c => shiftLabels[c]).join('');
+                        return `W${w + 1}:${s}`;
+                    }).join(' | ');
+                    lines.push(`• ${emp.name}: ${weeksStr}`);
+                });
+            } else {
+                lines.push(`ตารางเวร 7 วัน (สัปดาห์ที่ 1) สาขา ${branchName}`);
+                rosterPlan.forEach(emp => {
+                    if (emp.empType === 'pt4') {
+                        lines.push(`• ${emp.name} (p/t4): `);
+                        return;
+                    }
+                    const rowStr = emp.days.map((c, i) => `${state.dayShortNames[i]}:${shiftLabels[c]}`).join(' | ');
+                    lines.push(`• ${emp.name}: ${rowStr}`);
+                });
+            }
+
             const ta = document.createElement('textarea');
             ta.value = lines.join('\n');
             ta.style.position = 'fixed';
@@ -1747,6 +2563,115 @@
             document.execCommand('copy');
             document.body.removeChild(ta);
             showToast('คัดลอกตารางเวรแล้ว นำไปกด "วาง" ส่งเข้ากลุ่ม LINE ได้เลย!');
+        }
+
+        // ดึงข้อมูลเรียลไทม์จาก Google Apps Script
+        async function syncLiveGoogleSheet(isManual = false) {
+            const dot = document.getElementById('sync-dot');
+            const textEl = document.getElementById('sync-status-text');
+            const iconEl = document.getElementById('sync-icon');
+
+            if (iconEl) iconEl.classList.add('fa-spin');
+            if (textEl) textEl.textContent = 'กำลังซิงค์ข้อมูลสด...';
+
+            try {
+                const res = await fetch(LIVE_SHEET_API_URL, { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const payload = await res.json();
+
+                if (!payload || payload.status !== 'ok' || !Array.isArray(payload.data)) {
+                    throw new Error('รูปแบบข้อมูล JSON ไม่ถูกต้อง');
+                }
+
+                const colBranchOrder = ['10666', '7397', '8148', '5258', '13284', '15313'];
+                const staffByBranch = { '10666': [], '7397': [], '8148': [], '5258': [], '13284': [], '15313': [] };
+                const pt4ByBranch = { '10666': [], '7397': [], '8148': [], '5258': [], '13284': [], '15313': [] };
+
+                payload.data.forEach((row, rIdx) => {
+                    if (rIdx === 0) return;
+
+                    const labelSales = String(row.col_1 || '').trim();
+                    if (labelSales === 'เฉลี่ยต่อวัน') {
+                        colBranchOrder.forEach((bCode, i) => {
+                            const val = Number(row[`col_${i + 2}`]);
+                            if (!isNaN(val) && val > 0 && BRANCH_DATA[bCode]) {
+                                BRANCH_DATA[bCode].dailySales = Math.round(val);
+                                BRANCH_DATA[bCode].maxHeadcount = calcSalesQuotaFTE(val).totalHeads;
+                            }
+                        });
+                    }
+
+                    const labelCust = String(row.col_9 || '').trim();
+                    if (labelCust === 'เฉลี่ยต่อวัน') {
+                        colBranchOrder.forEach((bCode, i) => {
+                            const val = Number(row[`col_${i + 10}`]);
+                            if (!isNaN(val) && val > 0 && BRANCH_DATA[bCode]) {
+                                BRANCH_DATA[bCode].totalCustomers = Math.round(val);
+                            }
+                        });
+                    }
+
+                    const empName = String(row.col_33 || '').trim();
+                    const rawBranch = String(row.col_36 || '').trim();
+                    const empPos = String(row.col_37 || '').trim();
+
+                    if (empName && rawBranch && empName !== 'ชื่อ_นามสกุล') {
+                        const matchCode = rawBranch.match(/0?(\d{4,5})/);
+                        const cleanCode = matchCode ? matchCode[1] : '';
+                        if (cleanCode && staffByBranch[cleanCode]) {
+                            if (isPT4Position(empPos)) {
+                                pt4ByBranch[cleanCode].push({
+                                    name: empName,
+                                    position: empPos || 'p/t4'
+                                });
+                            } else {
+                                staffByBranch[cleanCode].push({
+                                    name: empName,
+                                    position: empPos || 'พนักงานประจำร้าน'
+                                });
+                            }
+                        }
+                    }
+                });
+
+                const roleRank = (pos) => {
+                    const p = String(pos || '').toLowerCase();
+                    if (p.includes('ทวิภาคี') || p.includes('ฝึกงาน')) return 4;
+                    if (p.includes('ผู้ช่วย')) return 2;
+                    if (p.includes('ผู้จัดการร้าน')) return 1;
+                    return 3;
+                };
+
+                BRANCH_ORDER.forEach(bCode => {
+                    if (BRANCH_DATA[bCode]) {
+                        const sortedCore = staffByBranch[bCode].sort((a, b) => roleRank(a.position) - roleRank(b.position));
+                        BRANCH_DATA[bCode].liveStaff = sortedCore;
+                        BRANCH_DATA[bCode].livePT4 = pt4ByBranch[bCode];
+                        if (sortedCore.length >= 6) {
+                            BRANCH_DATA[bCode].maxHeadcount = Math.min(18, sortedCore.length);
+                        }
+                    }
+                });
+
+                rosterPlan = [];
+                loadBranchIntoState(state.selectedBranch, false);
+                refreshAll();
+
+                const nowStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+                if (textEl) textEl.textContent = `ซิงค์ล่าสุด ${nowStr} น. (ข้อมูลจริง)`;
+                if (isManual) {
+                    showToast('อัปเดตยอดขาย ลูกค้า และรายชื่อพนักงาน (แยก p/t4) สำเร็จ!');
+                }
+            } catch (err) {
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+                if (textEl) textEl.textContent = 'ใช้ข้อมูลสำรองในเครื่อง';
+                if (isManual) {
+                    showToast('เชื่อมต่อ Google Sheets ไม่สำเร็จ ระบบใช้ข้อมูลล่าสุดในเครื่องแทน');
+                }
+            } finally {
+                if (iconEl) iconEl.classList.remove('fa-spin');
+            }
         }
 
         function refreshAll() {
@@ -1760,12 +2685,14 @@
             renderShiftTable(metrics);
             renderFestivalTable(festMetrics);
             renderRosterTable();
+            renderMonthlyTable();
             updateModeTabsUI();
         }
 
         window.onload = function () {
-            loadBranchIntoState('5258', true);
+            loadBranchIntoState('10666', true);
             refreshAll();
+            syncLiveGoogleSheet(false);
         };
     </script>
 </body>
